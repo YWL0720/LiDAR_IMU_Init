@@ -212,10 +212,13 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     MD(DIM_STATE, DIM_STATE) F_x, cov_w;
     double dt = 0.0;
 
-    if (b_first_frame_) {
+    if (b_first_frame_)
+    {
         dt = 0.1;
         b_first_frame_ = false;
-    } else {
+    }
+    else
+    {
         dt = pcl_beg_time - time_last_scan;
         time_last_scan = pcl_beg_time;
     }
@@ -244,7 +247,8 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     state_inout.pos_end += state_inout.vel_end * dt;
 
     /**CV model： un-distort pcl using linear interpolation **/
-    if(lidar_type != L515){
+    if(lidar_type != L515)
+    {
         auto it_pcl = pcl_out.points.end() - 1;
         double dt_j = 0.0;
         for(; it_pcl != pcl_out.points.begin(); it_pcl --)

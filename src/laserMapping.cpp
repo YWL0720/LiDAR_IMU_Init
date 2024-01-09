@@ -522,7 +522,8 @@ void map_incremental() {
         /* transform to world frame */
         pointBodyToWorld(&(feats_down_body->points[i]), &(feats_down_world->points[i]));
         /* decide if need add to map */
-        if (!Nearest_Points[i].empty() && flg_EKF_inited) {
+        if (!Nearest_Points[i].empty() && flg_EKF_inited)
+        {
             const PointVector &points_near = Nearest_Points[i];
             bool need_add = true;
             BoxPointType Box_of_Point;
@@ -888,19 +889,22 @@ int main(int argc, char **argv) {
     ros::Rate rate(5000);
     bool status = ros::ok();
 
-    while (status) {
+    while (status)
+    {
         if (flg_exit) break;
         ros::spinOnce();
-        if (sync_packages(Measures)) {
-            if (flg_reset) {
+        if (sync_packages_only_lidar(Measures))
+        {
+            if (flg_reset)
+            {
                 ROS_WARN("reset when rosbag play back.");
                 p_imu->Reset();
                 flg_reset = false;
                 continue;
             }
 
-
-            if (feats_undistort->empty() || (feats_undistort == NULL)) {
+            if (feats_undistort->empty() || (feats_undistort == NULL))
+            {
                 first_lidar_time = Measures.lidar_beg_time;
                 p_imu->first_lidar_time = first_lidar_time;
                 ROS_WARN("LI-Init not ready, no points stored.");
@@ -908,9 +912,6 @@ int main(int argc, char **argv) {
 
             p_imu->Process(Measures, state, feats_undistort);
             state_propagat = state;
-
-
-
 
 
             /*** Segment the map in lidar FOV ***/
@@ -921,11 +922,14 @@ int main(int argc, char **argv) {
             downSizeFilterSurf.filter(*feats_down_body);
             feats_down_size = feats_down_body->points.size();
             /*** initialize the map kdtree ***/
-            if (ikdtree.Root_Node == nullptr) {
-                if (feats_down_size > 5) {
+            if (ikdtree.Root_Node == nullptr)
+            {
+                if (feats_down_size > 5)
+                {
                     ikdtree.set_downsample_param(filter_size_map_min);
                     feats_down_world->resize(feats_down_size);
-                    for (int i = 0; i < feats_down_size; i++) {
+                    for (int i = 0; i < feats_down_size; i++)
+                    {
                         pointBodyToWorld(&(feats_down_body->points[i]), &(feats_down_world->points[i]));
                     }
                     ikdtree.Build(feats_down_world->points);
@@ -949,38 +953,47 @@ int main(int argc, char **argv) {
 
 
             /*** iterated state estimation ***/
+            // TODO
             std::vector<M3D> body_var;
             std::vector<M3D> crossmat_list;
             body_var.reserve(feats_down_size);
             crossmat_list.reserve(feats_down_size);
 
-
-
-
-            for (iterCount = 0; iterCount < NUM_MAX_ITERATIONS; iterCount++) {
-
+            for (iterCount = 0; iterCount < NUM_MAX_ITERATIONS; iterCount++)
+            {
+                // TODO
                 laserCloudOri->clear();
                 corr_normvect->clear();
                 total_residual = 0.0;
 
+                // 是否使用openmp
                 /** closest surface search and residual computation **/
                 #ifdef MP_EN
                     omp_set_num_threads(MP_PROC_NUM);
                     #pragma omp parallel for
                 #endif
-                for (int i = 0; i < feats_down_size; i++) {
+                for (int i = 0; i < feats_down_size; i++)
+                {
+                    // 雷达坐标系下的点
                     PointType &point_body = feats_down_body->points[i];
+                    // 世界坐标系下的点
                     PointType &point_world = feats_down_world->points[i];
                     V3D p_body(point_body.x, point_body.y, point_body.z);
                     /// transform to world frame
+                    // 转换到世界坐标系啊下，按照当前的预测位姿
                     pointBodyToWorld(&point_body, &point_world);
+                    // 最近邻点序列的具体距离值
                     vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
+                    // 最近邻点序列
                     auto &points_near = Nearest_Points[i];
                     uint8_t search_flag = 0;
 
-                    if (nearest_search_en) {
+                    if (nearest_search_en)
+                    {
                         /** Find the closest surfaces in the map **/
+                        // 查询当前世界坐标系下的预测点，在kdtree中的最近邻点序列
                         ikdtree.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
+                        // 找到的最近点数量是否满足要求 最近点数量大于等于5个 且最远的点距离不大于5
                         if (points_near.size() < NUM_MATCH_POINTS)
                             point_selected_surf[i] = false;
                         else
@@ -989,7 +1002,9 @@ int main(int argc, char **argv) {
 
                     res_last[i] = -1000.0f;
 
-                    if (!point_selected_surf[i] || points_near.size() < NUM_MATCH_POINTS) {
+                    // 不满足面点要求的将会剔除
+                    if (!point_selected_surf[i] || points_near.size() < NUM_MATCH_POINTS)
+                    {
                         point_selected_surf[i] = false;
                         continue;
                     }
@@ -1102,13 +1117,17 @@ int main(int argc, char **argv) {
                 euler_cur = RotMtoEuler(state.rot_end);
 
                 /*** Rematch Judgement ***/
+                // 先搜索匹配一次，然后迭代，使得本次匹配收敛 本次匹配收敛后 再进行新的匹配
+                // 如果当前只搜索匹配了一次，但是已经迭代到倒数第二次了 还没有收敛 这时候再重新搜索匹配一次
                 nearest_search_en = false;
-                if (flg_EKF_converged || ((rematch_num == 0) && (iterCount == (NUM_MAX_ITERATIONS - 2)))) {
+                if (flg_EKF_converged || ((rematch_num == 0) && (iterCount == (NUM_MAX_ITERATIONS - 2))))
+                {
                     nearest_search_en = true;
                     rematch_num++;
                 }
 
                 /*** Convergence Judgements and Covariance Update ***/
+                // 什么时候停止迭代？ 已经重新匹配了两次 或者已经达到了最大的迭代次数
                 if (!EKF_stop_flg && (rematch_num >= 2 || (iterCount == NUM_MAX_ITERATIONS - 1))) {
                     if (flg_EKF_inited) {
                         /*** Covariance Update ***/
@@ -1145,11 +1164,11 @@ int main(int argc, char **argv) {
             kdtree_size_end = ikdtree.size();
 
             /***** Device starts to move, data accmulation begins. ****/
-            if (!imu_en && !data_accum_start && state.pos_end.norm() > 0.05) {
-                printf(BOLDCYAN "[Initialization] Movement detected, data accumulation starts.\n\n\n\n\n" RESET);
-                data_accum_start = true;
-                move_start_time = lidar_end_time;
-            }
+//            if (!imu_en && !data_accum_start && state.pos_end.norm() > 0.05) {
+//                printf(BOLDCYAN "[Initialization] Movement detected, data accumulation starts.\n\n\n\n\n" RESET);
+//                data_accum_start = true;
+//                move_start_time = lidar_end_time;
+//            }
 
             /******* Publish points *******/
             if (scan_pub_en || pcd_save_en) publish_frame_world(pubLaserCloudFullRes);
@@ -1168,82 +1187,82 @@ int main(int argc, char **argv) {
                      << " " << state.bias_g.transpose() << " " << state.bias_a.transpose() * 0.9822 / 9.81 << " "
                      << state.gravity.transpose() << " " << total_distance << endl;
 
-            //Broadcast every second
-            if (imu_en && frame_num % orig_odom_freq * cut_frame_num == 0 && !online_calib_finish) {
-                double online_calib_completeness = lidar_end_time - online_calib_starts_time;
-                online_calib_completeness =
-                        online_calib_completeness < online_refine_time ? online_calib_completeness : online_refine_time;
-                cout << "\x1B[2J\x1B[H"; //clear the screen
-                if(online_refine_time > 0.1)
-                    printProgress(online_calib_completeness / online_refine_time);
-                if (!refine_print && online_calib_completeness > (online_refine_time - 1e-6)) {
-                    refine_print = true;
-                    online_calib_finish = true;
-                    cout << endl;
-                    print_refine_result();
-                    fout_result << "Refinement result:" << endl;
-                    fileout_calib_result();
-                    string path = ros::package::getPath("lidar_imu_init");
-                    path += "/result/Initialization_result.txt";
-                    cout << endl  << "Initialization and refinement result is written to " << endl << BOLDGREEN << path << RESET <<endl;
-                }
-            }
-
-
-            if (!imu_en && !data_accum_finished && data_accum_start) {
-                //Push Lidar's Angular velocity and linear velocity
-                Init_LI->push_Lidar_CalibState(state.rot_end, state.bias_g, state.vel_end, lidar_end_time);
-                //Data Accumulation Sufficience Appraisal
-                data_accum_finished = Init_LI->data_sufficiency_assess(Jaco_rot, frame_num, state.bias_g,
-                                                                       orig_odom_freq, cut_frame_num);
-
-                if (data_accum_finished) {
-                    Init_LI->LI_Initialization(orig_odom_freq, cut_frame_num, timediff_imu_wrt_lidar, move_start_time);
-
-                    online_calib_starts_time = lidar_end_time;
-
-                    //Transfer to FAST-LIO2
-                    imu_en = false;
-                    state.offset_R_L_I = Init_LI->get_R_LI();
-                    state.offset_T_L_I = Init_LI->get_T_LI();
-                    state.pos_end = -state.rot_end * state.offset_R_L_I.transpose() * state.offset_T_L_I +
-                                    state.pos_end; //Body frame is IMU frame in FAST-LIO mode
-                    state.rot_end = state.rot_end * state.offset_R_L_I.transpose();
-                    state.gravity = Init_LI->get_Grav_L0();
-                    state.bias_g = Init_LI->get_gyro_bias();
-                    state.bias_a = Init_LI->get_acc_bias();
-
-
-                    if (lidar_type != AVIA)
-                        cut_frame_num = 2;
-
-                    time_lag_IMU_wtr_lidar = Init_LI->get_total_time_lag(); //Compensate IMU's time in the buffer
-                    for (int i = 0; i < imu_buffer.size(); i++) {
-                        imu_buffer[i]->header.stamp = ros::Time().fromSec(imu_buffer[i]->header.stamp.toSec()- time_lag_IMU_wtr_lidar);
-                    }
-
-                    p_imu->imu_en = imu_en;
-                    p_imu->LI_init_done = true;
-                    p_imu->set_mean_acc_norm(mean_acc_norm);
-                    p_imu->set_gyr_cov(V3D(0.1, 0.1, 0.1));
-                    p_imu->set_acc_cov(V3D(0.1, 0.1, 0.1));
-                    p_imu->set_gyr_bias_cov(V3D(0.0001, 0.0001, 0.0001));
-                    p_imu->set_acc_bias_cov(V3D(0.0001, 0.0001, 0.0001));
-
-                    //Output Initialization result
-                    fout_result << "Initialization result:" << endl;
-                    fileout_calib_result();
-                }
-            }
+//            //Broadcast every second
+//            if (imu_en && frame_num % orig_odom_freq * cut_frame_num == 0 && !online_calib_finish) {
+//                double online_calib_completeness = lidar_end_time - online_calib_starts_time;
+//                online_calib_completeness =
+//                        online_calib_completeness < online_refine_time ? online_calib_completeness : online_refine_time;
+//                cout << "\x1B[2J\x1B[H"; //clear the screen
+//                if(online_refine_time > 0.1)
+//                    printProgress(online_calib_completeness / online_refine_time);
+//                if (!refine_print && online_calib_completeness > (online_refine_time - 1e-6)) {
+//                    refine_print = true;
+//                    online_calib_finish = true;
+//                    cout << endl;
+//                    print_refine_result();
+//                    fout_result << "Refinement result:" << endl;
+//                    fileout_calib_result();
+//                    string path = ros::package::getPath("lidar_imu_init");
+//                    path += "/result/Initialization_result.txt";
+//                    cout << endl  << "Initialization and refinement result is written to " << endl << BOLDGREEN << path << RESET <<endl;
+//                }
+//            }
+//
+//
+//            if (!imu_en && !data_accum_finished && data_accum_start) {
+//                //Push Lidar's Angular velocity and linear velocity
+//                Init_LI->push_Lidar_CalibState(state.rot_end, state.bias_g, state.vel_end, lidar_end_time);
+//                //Data Accumulation Sufficience Appraisal
+//                data_accum_finished = Init_LI->data_sufficiency_assess(Jaco_rot, frame_num, state.bias_g,
+//                                                                       orig_odom_freq, cut_frame_num);
+//
+//                if (data_accum_finished) {
+//                    Init_LI->LI_Initialization(orig_odom_freq, cut_frame_num, timediff_imu_wrt_lidar, move_start_time);
+//
+//                    online_calib_starts_time = lidar_end_time;
+//
+//                    //Transfer to FAST-LIO2
+//                    imu_en = false;
+//                    state.offset_R_L_I = Init_LI->get_R_LI();
+//                    state.offset_T_L_I = Init_LI->get_T_LI();
+//                    state.pos_end = -state.rot_end * state.offset_R_L_I.transpose() * state.offset_T_L_I +
+//                                    state.pos_end; //Body frame is IMU frame in FAST-LIO mode
+//                    state.rot_end = state.rot_end * state.offset_R_L_I.transpose();
+//                    state.gravity = Init_LI->get_Grav_L0();
+//                    state.bias_g = Init_LI->get_gyro_bias();
+//                    state.bias_a = Init_LI->get_acc_bias();
+//
+//
+//                    if (lidar_type != AVIA)
+//                        cut_frame_num = 2;
+//
+//                    time_lag_IMU_wtr_lidar = Init_LI->get_total_time_lag(); //Compensate IMU's time in the buffer
+//                    for (int i = 0; i < imu_buffer.size(); i++) {
+//                        imu_buffer[i]->header.stamp = ros::Time().fromSec(imu_buffer[i]->header.stamp.toSec()- time_lag_IMU_wtr_lidar);
+//                    }
+//
+//                    p_imu->imu_en = imu_en;
+//                    p_imu->LI_init_done = true;
+//                    p_imu->set_mean_acc_norm(mean_acc_norm);
+//                    p_imu->set_gyr_cov(V3D(0.1, 0.1, 0.1));
+//                    p_imu->set_acc_cov(V3D(0.1, 0.1, 0.1));
+//                    p_imu->set_gyr_bias_cov(V3D(0.0001, 0.0001, 0.0001));
+//                    p_imu->set_acc_bias_cov(V3D(0.0001, 0.0001, 0.0001));
+//
+//                    //Output Initialization result
+//                    fout_result << "Initialization result:" << endl;
+//                    fileout_calib_result();
+//                }
+//            }
         }
         status = ros::ok();
         rate.sleep();
     }
 
-    cout << endl << REDPURPLE << "[Exit]: Exit the process." <<RESET <<endl;
-    if (!online_calib_finish) {
-        cout << YELLOW << "[WARN]: Online refinement not finished yet." << RESET;
-        print_refine_result();
-    }
+//    cout << endl << REDPURPLE << "[Exit]: Exit the process." <<RESET <<endl;
+//    if (!online_calib_finish) {
+//        cout << YELLOW << "[WARN]: Online refinement not finished yet." << RESET;
+//        print_refine_result();
+//    }
     return 0;
 }

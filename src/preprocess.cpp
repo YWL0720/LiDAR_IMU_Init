@@ -133,7 +133,7 @@ Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr &msg
         if (pl_orig.points[plsize - 1].time > 0) {
             given_offset_time = true;
         } else {
-            cout << "Compute offset time using constant rotation model." << endl;
+//            cout << "Compute offset time using constant rotation model." << endl;
             given_offset_time = false;
             memset(is_first, true, sizeof(is_first));
         }
@@ -245,7 +245,7 @@ Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr &msg
         if (pl_orig.points[plsize - 1].timestamp > 0) {
             given_offset_time = true;
         } else {
-            cout << "Compute offset time using constant rotation model." << endl;
+//            cout << "Compute offset time using constant rotation model." << endl;
             given_offset_time = false;
             memset(is_first, true, sizeof(is_first));
         }
@@ -576,7 +576,7 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
     if (pl_orig.points[plsize - 1].time > 0) {
         given_offset_time = true;
     } else {
-        cout << "Compute offset time using constant rotation model." << endl;
+//        cout << "Compute offset time using constant rotation model." << endl;
         given_offset_time = false;
         memset(is_first, true, sizeof(is_first));
     }
