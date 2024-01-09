@@ -127,11 +127,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9f71a6ed-9c5a-40b4-b21e-7c001bdebdbd" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/config/velodyne.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/velodyne.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/result/Initialization_result.txt" beforeDir="false" afterPath="$PROJECT_DIR$/result/Initialization_result.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/laserMapping.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/laserMapping.cpp" afterDir="false" />
-    </list>
+    <list default="true" id="9f71a6ed-9c5a-40b4-b21e-7c001bdebdbd" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -165,7 +161,7 @@
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "last_opened_file_path": "/home/ywl/ws_11/src/LiDAR_IMU_Init",
+    "last_opened_file_path": "/home/ywl/ws_11/src/LiDAR_IMU_Init/CMakeLists.txt",
     "nodejs_package_manager_path": "npm",
     "structure.view.defaults.are.configured": "true"
   }
@@ -853,7 +849,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1704782985811</updated>
-      <workItem from="1704782987789" duration="379000" />
+      <workItem from="1704782987789" duration="857000" />
     </task>
     <servers />
   </component>

@@ -782,7 +782,7 @@ int main(int argc, char **argv) {
     nh.param<int>("preprocess/lidar_type", lidar_type, AVIA);
     nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
     nh.param<bool>("preprocess/feature_extract_en", p_pre->feature_enabled, 0);
-    nh.param<bool>("initialization/cut_frame", cut_frame, true);
+    nh.param<bool>("initialization/cut_frame", cut_frame, false);
     nh.param<int>("initialization/cut_frame_num", cut_frame_num, 1);
     nh.param<int>("initialization/orig_odom_freq", orig_odom_freq, 10);
     nh.param<double>("initialization/online_refine_time", online_refine_time, 20.0);
@@ -1203,7 +1203,7 @@ int main(int argc, char **argv) {
                     online_calib_starts_time = lidar_end_time;
 
                     //Transfer to FAST-LIO2
-                    imu_en = true;
+                    imu_en = false;
                     state.offset_R_L_I = Init_LI->get_R_LI();
                     state.offset_T_L_I = Init_LI->get_T_LI();
                     state.pos_end = -state.rot_end * state.offset_R_L_I.transpose() * state.offset_T_L_I +
