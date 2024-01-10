@@ -1,6 +1,0 @@
-# ninja log v5
-1	15578	1704807755777329592	CMakeFiles/li_init.dir/include/LI_init/LI_init.cpp.o	5fe2f16726c1552f
-3	21215	1704887627978643504	CMakeFiles/li_init.dir/src/laserMapping.cpp.o	61c78019cddfa6c7
-3	1389	1704883644158371596	CMakeFiles/li_init.dir/include/ikd-Tree/ikd_Tree.cpp.o	66c47d4cf6eec98e
-1	5952	1704807746165201131	CMakeFiles/li_init.dir/src/preprocess.cpp.o	7dc2dec56843b6c
-21215	24766	1704887631534704414	devel/lib/lidar_imu_init/li_init	ceb6d6cf79b845f
