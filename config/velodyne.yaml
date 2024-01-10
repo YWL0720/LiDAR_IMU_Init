@@ -18,8 +18,10 @@ initialization:
     Trans_LI_cov: [ 0.0001, 0.0001, 0.0001 ]
 
 mapping:
-    filter_size_surf: 0.5
-    filter_size_map: 0.5
+    filter_size_surf: 0.1
+    filter_size_map: 0.1
+    scale_mid: 3
+    scale_big: 6
     gyr_cov: 0.5
     acc_cov: 0.5
     b_acc_cov: 0.0001
