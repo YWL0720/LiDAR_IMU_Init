@@ -7,29 +7,28 @@ CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
   CMake that the project does not need compatibility with older versions.
 
 
--- The C compiler identification is GNU 9.4.0
--- The CXX compiler identification is GNU 9.4.0
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/gcc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: /usr/bin/g++ - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
+CMake Warning (dev) at CMakeLists.txt:2 (project):
+  Policy CMP0048 is not set: project() command manages VERSION variables.
+  Run "cmake --help-policy CMP0048" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+
+  The following variable(s) would be set to empty:
+
+    CMAKE_PROJECT_VERSION
+    CMAKE_PROJECT_VERSION_MAJOR
+    CMAKE_PROJECT_VERSION_MINOR
+    CMAKE_PROJECT_VERSION_PATCH
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
 Current CPU architecture: x86_64
 Processer number:  20
 core for MP: 3
--- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.8.so (found version "3.8.10") 
 -- Using CATKIN_DEVEL_PREFIX: /home/ywl/ws_11/src/LiDAR_IMU_Init/cmake-build-debug/devel
 -- Using CMAKE_PREFIX_PATH: /home/ywl/ws_2/devel;/home/ywl/ws_1/devel;/home/ywl/mct_loam_ws/devel;/home/ywl/livox_ws/devel;/home/ywl/carto_ws/devel_isolated/cartographer_rviz;/home/ywl/carto_ws/install_isolated;/home/ywl/carto_ws/devel;/home/ywl/catkin_ws/devel;/home/ywl/car_ws/devel;/home/ywl/ywl_ws/devel;/opt/ros/noetic
 -- This workspace overlays: /home/ywl/ws_2/devel;/home/ywl/ws_1/devel;/home/ywl/mct_loam_ws/devel;/home/ywl/livox_ws/devel;/home/ywl/carto_ws/devel_isolated/cartographer_rviz;/home/ywl/carto_ws/install_isolated;/home/ywl/carto_ws/devel;/home/ywl/catkin_ws/devel;/home/ywl/car_ws/devel;/home/ywl/ywl_ws/devel;/opt/ros/noetic
 -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.10", minimum required is "3") 
 -- Using PYTHON_EXECUTABLE: /usr/bin/python3
 -- Using Debian Python package layout
--- Found PY_em: /usr/lib/python3/dist-packages/em.py  
 -- Using empy: /usr/lib/python3/dist-packages/em.py
 -- Using CATKIN_ENABLE_TESTING: ON
 -- Call enable_testing()
@@ -54,19 +53,11 @@ CMake Deprecation Warning at /usr/src/googletest/googletest/CMakeLists.txt:56 (c
 
 
 -- Found PythonInterp: /usr/bin/python3 (found version "3.8.10") 
--- Found Threads: TRUE  
 -- Using Python nosetests: /usr/bin/nosetests3
 -- catkin 0.8.10
 -- BUILD_SHARED_LIBS is on
 -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
--- Checking for module 'eigen3'
---   Found eigen3, version 3.3.9
--- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1") 
 -- Eigen found (include: /usr/include/eigen3, version: 3.3.7)
--- Found Boost: /usr/include (found suitable version "1.71.0", minimum required is "1.55.0") found components: system filesystem date_time iostreams regex 
--- Checking for module 'flann'
---   Found flann, version 1.9.1
--- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so  
 -- The imported target "vtkParseOGLExt" references the file
    "/usr/bin/vtkParseOGLExt-7.1"
 but this file does not exist.  Possible reasons include:
@@ -103,8 +94,6 @@ but this file does not exist.  Possible reasons include:
    "/usr/lib/cmake/vtk-7.1/VTKTargets.cmake"
 but not all the files it references.
 
--- Checking for module 'libusb-1.0'
---   Found libusb-1.0, version 1.0.23
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (USB_10)
   does not match the name of the calling package (OpenNI).  This can lead to
@@ -118,8 +107,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found USB_10: /usr/lib/x86_64-linux-gnu/libusb-1.0.so  
--- Found OpenNI: /usr/lib/libOpenNI.so  
 -- OpenNI found (include: /usr/include/ni, lib: /usr/lib/libOpenNI.so)
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (USB_10)
@@ -134,7 +121,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found OpenNI2: /usr/lib/libOpenNI2.so  
 -- OpenNI2 found (include: /usr/include/openni2, lib: /usr/lib/libOpenNI2.so)
 ** WARNING ** io features related to pcap will be disabled
 ** WARNING ** io features related to png will be disabled
@@ -150,7 +136,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found libusb-1.0: /usr/include  
 ** WARNING ** io features related to libusb-1.0 will be disabled
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (USB_10)
@@ -180,7 +165,6 @@ Call Stack (most recent call first):
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
 -- OpenNI2 found (include: /usr/include/openni2, lib: /usr/lib/libOpenNI2.so)
--- Found Qhull: optimized;/usr/lib/x86_64-linux-gnu/libqhull.so;debug;/usr/lib/x86_64-linux-gnu/libqhull.so  
 -- QHULL found (include: /usr/include, lib: optimized;/usr/lib/x86_64-linux-gnu/libqhull.so;debug;/usr/lib/x86_64-linux-gnu/libqhull.so)
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (USB_10)
@@ -207,7 +191,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so  
 -- looking for PCL_KDTREE
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_KDTREE)
@@ -219,7 +202,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so  
 -- looking for PCL_OCTREE
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_OCTREE)
@@ -231,7 +213,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so  
 -- looking for PCL_SEARCH
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_SEARCH)
@@ -243,7 +224,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so  
 -- looking for PCL_SAMPLE_CONSENSUS
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -256,7 +236,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so  
 -- looking for PCL_FILTERS
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -268,7 +247,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so  
 -- looking for PCL_2D
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_2D)
@@ -280,7 +258,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_2D: /usr/include/pcl-1.10  
 -- looking for PCL_GEOMETRY
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -292,7 +269,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_GEOMETRY: /usr/include/pcl-1.10  
 -- looking for PCL_IO
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_IO)
@@ -304,7 +280,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so  
 -- looking for PCL_FEATURES
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -316,7 +291,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so  
 -- looking for PCL_ML
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_ML)
@@ -328,7 +302,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so  
 -- looking for PCL_SEGMENTATION
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -340,7 +313,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so  
 -- looking for PCL_VISUALIZATION
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -352,7 +324,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so  
 -- looking for PCL_SURFACE
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -364,7 +335,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so  
 -- looking for PCL_REGISTRATION
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -376,7 +346,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so  
 -- looking for PCL_KEYPOINTS
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -388,7 +357,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so  
 -- looking for PCL_TRACKING
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -400,7 +368,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so  
 -- looking for PCL_RECOGNITION
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -412,7 +379,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so  
 -- looking for PCL_STEREO
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_STEREO)
@@ -424,7 +390,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so  
 -- looking for PCL_APPS
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_APPS)
@@ -436,7 +401,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so  
 -- looking for PCL_IN_HAND_SCANNER
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -448,7 +412,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.10  
 -- looking for PCL_POINT_CLOUD_EDITOR
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -461,7 +424,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.10  
 -- looking for PCL_OUTOFCORE
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args`
@@ -473,7 +435,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so  
 -- looking for PCL_PEOPLE
 CMake Warning (dev) at /home/ywl/clion-2022.2/bin/cmake/linux/share/cmake-3.23/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
   The package name passed to `find_package_handle_standard_args` (PCL_PEOPLE)
@@ -485,8 +446,6 @@ Call Stack (most recent call first):
   CMakeLists.txt:60 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so  
--- Found PCL: pcl_common;pcl_kdtree;pcl_octree;pcl_search;pcl_sample_consensus;pcl_filters;pcl_io;pcl_features;pcl_ml;pcl_segmentation;pcl_visualization;pcl_surface;pcl_registration;pcl_keypoints;pcl_tracking;pcl_recognition;pcl_stereo;pcl_apps;pcl_outofcore;pcl_people;/usr/lib/x86_64-linux-gnu/libboost_system.so;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so;/usr/lib/x86_64-linux-gnu/libboost_date_time.so;/usr/lib/x86_64-linux-gnu/libboost_iostreams.so;/usr/lib/x86_64-linux-gnu/libboost_regex.so;optimized;/usr/lib/x86_64-linux-gnu/libqhull.so;debug;/usr/lib/x86_64-linux-gnu/libqhull.so;/usr/lib/libOpenNI.so;/usr/lib/libOpenNI2.so;vtkChartsCore;vtkCommonColor;vtkCommonCore;vtksys;vtkCommonDataModel;vtkCommonMath;vtkCommonMisc;vtkCommonSystem;vtkCommonTransforms;vtkCommonExecutionModel;vtkFiltersGeneral;vtkCommonComputationalGeometry;vtkFiltersCore;vtkInfovisCore;vtkFiltersExtraction;vtkFiltersStatistics;vtkImagingFourier;vtkImagingCore;vtkalglib;vtkRenderingContext2D;vtkRenderingCore;vtkFiltersGeometry;vtkFiltersSources;vtkRenderingFreeType;/usr/lib/x86_64-linux-gnu/libfreetype.so;/usr/lib/x86_64-linux-gnu/libz.so;vtkFiltersModeling;vtkImagingSources;vtkInteractionStyle;vtkInteractionWidgets;vtkFiltersHybrid;vtkImagingColor;vtkImagingGeneral;vtkImagingHybrid;vtkIOImage;vtkDICOMParser;vtkmetaio;/usr/lib/x86_64-linux-gnu/libjpeg.so;/usr/lib/x86_64-linux-gnu/libpng.so;/usr/lib/x86_64-linux-gnu/libtiff.so;vtkRenderingAnnotation;vtkRenderingVolume;vtkIOXML;vtkIOCore;vtkIOXMLParser;/usr/lib/x86_64-linux-gnu/libexpat.so;vtkIOGeometry;vtkIOLegacy;vtkIOPLY;vtkRenderingLOD;vtkViewsContext2D;vtkViewsCore;vtkRenderingContextOpenGL2;vtkRenderingOpenGL2;FLANN::FLANN (Required is at least version "1.8") 
 -- Found required Ceres dependency: Eigen version 3.3.9 in /usr/local/include/eigen3
 -- Found required Ceres dependency: glog
 -- Found required Ceres dependency: gflags
