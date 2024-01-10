@@ -1173,11 +1173,11 @@ int main(int argc, char **argv) {
             downSizeFilterSurf_small.setInputCloud(feats_undistort);
             downSizeFilterSurf_small.filter(*feats_down_body_small);
 
-            downSizeFilterSurf_small.setInputCloud(feats_undistort);
-            downSizeFilterSurf_small.filter(*feats_down_body_small);
+            downSizeFilterSurf_mid.setInputCloud(feats_undistort);
+            downSizeFilterSurf_mid.filter(*feats_down_body_mid);
 
-            downSizeFilterSurf_small.setInputCloud(feats_undistort);
-            downSizeFilterSurf_small.filter(*feats_down_body_small);
+            downSizeFilterSurf_big.setInputCloud(feats_undistort);
+            downSizeFilterSurf_big.filter(*feats_down_body_big);
             /*******************************************/
 
             /*** 统计下采样后各个分辨率点的个数 ***/
@@ -1443,7 +1443,7 @@ int main(int argc, char **argv) {
 
             }
 
-            /// 第二次迭代 size = big 不匹配
+            /// 第二次迭代 size = big
             {
                 laserCloudOri->clear();
                 corr_normvect->clear();
@@ -1955,6 +1955,7 @@ int main(int argc, char **argv) {
                 VD(DIM_STATE) P_diag = state.cov.diagonal();
             }
 
+            cout << feats_down_size_big << " " << feats_down_size_small << " " << feats_down_size_mid << endl;
             /******* Publish odometry *******/
             publish_odometry(pubOdomAftMapped);
 
