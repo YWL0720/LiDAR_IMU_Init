@@ -27,6 +27,13 @@ mapping:
     b_acc_cov: 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
+    imu_en: false
+    extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1 ]
+    undistort_iter: false
+    cov_lidar: 0.001
 
 publish:
     path_en:  true

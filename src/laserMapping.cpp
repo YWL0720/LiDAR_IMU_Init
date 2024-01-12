@@ -87,10 +87,13 @@ double cube_len = 0, total_distance = 0, lidar_end_time = 0, first_lidar_time = 
 // Time Log Variables
 int kdtree_size_st = 0, kdtree_size_end = 0, add_point_size = 0;
 
+/*** R ***/
+double R_lidar = 0.00001;
 
 int lidar_type, pcd_save_interval = -1, pcd_index = 0;
 bool lidar_pushed, flg_reset, flg_exit = false, flg_EKF_inited = true;
 bool imu_en = false;
+bool undistort_iter = false;
 bool scan_pub_en = false, dense_pub_en = false, scan_body_pub_en = false;
 bool runtime_pos_log = false, pcd_save_en = false, extrinsic_est_en = true, path_en = true;
 
@@ -1023,7 +1026,11 @@ int main(int argc, char **argv) {
     nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
     nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
     nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
-    nh.param<bool>("mapping/imu_en", imu_en, false);\
+    nh.param<bool>("mapping/imu_en", imu_en, false);
+    nh.param<bool>("mapping/undistort_iter", undistort_iter, false);
+    nh.param<double>("mapping/cov_lidar", R_lidar, 0.001);
+
+
     nh.param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
     nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
 
@@ -1039,6 +1046,8 @@ int main(int argc, char **argv) {
 
     cout << "***************************" << endl;
     cout << "use imu = " << imu_en << endl;
+    cout << "use undistort_iter = " << undistort_iter << endl;
+    cout << "1 / R  = " << 1.0 / R_lidar << endl;
     cout << "small surf size = " << filter_size_surf_min_small << endl;
     cout << "mid surf size = " << filter_size_surf_min_mid << endl;
     cout << "big surf size = " << filter_size_surf_min_big << endl;
@@ -1099,6 +1108,7 @@ int main(int argc, char **argv) {
 
     p_imu->lidar_type = p_pre->lidar_type = lidar_type;
     p_imu->imu_en = imu_en;
+    p_imu->undistort_iter = undistort_iter;
     p_imu->LI_init_done = false;
     p_imu->set_gyr_cov(V3D(gyr_cov, gyr_cov, gyr_cov));
     p_imu->set_acc_cov(V3D(acc_cov, acc_cov, acc_cov));
@@ -1310,6 +1320,12 @@ int main(int argc, char **argv) {
             crossmat_list.reserve(feats_down_size);
 
             /*** 开始迭代 ***/
+            /// 去畸变
+            if (!imu_en && undistort_iter)
+            {
+                p_imu->undistort_without_imu(state, *feats_down_body_big);
+            }
+
             /// 第一次迭代 size = big
             {
                 laserCloudOri->clear();
@@ -1388,7 +1404,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
-                cout << "size big effect_feat_num : " << effect_feat_num << endl;
+//                cout << "size big effect_feat_num : " << effect_feat_num << endl;
                 res_mean_last = total_residual / effect_feat_num;
 
                 /*** Computation of Measurement Jacobian matrix H and measurents vector ***/
@@ -1439,7 +1455,7 @@ int main(int argc, char **argv) {
                         Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
                     }
 
-                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
+                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * (1.0 / R_lidar);
                     /*** Measurement: distance to the closest surface/corner ***/
                     meas_vec(i) = -norm_p.intensity;
                 }
@@ -1474,11 +1490,18 @@ int main(int argc, char **argv) {
 
             }
 
+            /// 去畸变
+            if (!imu_en && undistort_iter)
+            {
+                p_imu->undistort_without_imu(state, *feats_down_body_mid);
+            }
+
             /// 第二次迭代 size = mid
             {
                 laserCloudOri->clear();
                 corr_normvect->clear();
                 total_residual = 0.0;
+
 
                 // 是否使用openmp
                 /** closest surface search and residual computation **/
@@ -1553,7 +1576,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
-                cout << "size mid effect_feat_num : " << effect_feat_num << endl;
+//                cout << "size mid effect_feat_num : " << effect_feat_num << endl;
 
                 res_mean_last = total_residual / effect_feat_num;
 
@@ -1605,7 +1628,7 @@ int main(int argc, char **argv) {
                         Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
                     }
 
-                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
+                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * (1.0 / R_lidar);
                     /*** Measurement: distance to the closest surface/corner ***/
                     meas_vec(i) = -norm_p.intensity;
                 }
@@ -1638,6 +1661,12 @@ int main(int argc, char **argv) {
 
                 euler_cur = RotMtoEuler(state.rot_end);
 
+            }
+
+            /// 去畸变
+            if (!imu_en && undistort_iter)
+            {
+                p_imu->undistort_without_imu(state, *feats_down_body_small);
             }
 
             /// 第三次迭代 size = small
@@ -1719,7 +1748,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
-                cout << "size small effect_feat_num : " << effect_feat_num << endl;
+//                cout << "size small effect_feat_num : " << effect_feat_num << endl;
 
                 res_mean_last = total_residual / effect_feat_num;
 
@@ -1771,7 +1800,7 @@ int main(int argc, char **argv) {
                         Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
                     }
 
-                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
+                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * (1.0 / R_lidar);
                     /*** Measurement: distance to the closest surface/corner ***/
                     meas_vec(i) = -norm_p.intensity;
                 }
@@ -1804,6 +1833,12 @@ int main(int argc, char **argv) {
 
                 euler_cur = RotMtoEuler(state.rot_end);
             }
+
+//            /// 去畸变
+//            if (!imu_en && undistort_iter)
+//            {
+//                p_imu->undistort_without_imu(state, *feats_down_body_small);
+//            }
 
             /// 第四次迭代 size = small + 更新协方差
             {
@@ -1884,7 +1919,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
-                cout << "size small effect_feat_num : " << effect_feat_num << endl;
+//                cout << "size small effect_feat_num : " << effect_feat_num << endl;
 
                 res_mean_last = total_residual / effect_feat_num;
 
@@ -1936,7 +1971,7 @@ int main(int argc, char **argv) {
                         Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
                     }
 
-                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
+                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * (1.0 / R_lidar);
                     /*** Measurement: distance to the closest surface/corner ***/
                     meas_vec(i) = -norm_p.intensity;
                 }

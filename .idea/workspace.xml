@@ -131,6 +131,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Log/mat_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Log/mat_out.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/mid360.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/mid360.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/velodyne.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/velodyne.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/IMU_Processing.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/IMU_Processing.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/laserMapping.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/laserMapping.cpp" afterDir="false" />
@@ -174,6 +175,11 @@
   }
 }</component>
   <component name="RunManager" selected="CMake Application.li_init">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="_lidar_imu_init_generate_messages_check_deps_Pose6D" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="_lidar_imu_init_generate_messages_check_deps_Pose6D" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -856,6 +862,7 @@
       <workItem from="1704893988138" duration="3675000" />
       <workItem from="1704969355951" duration="12995000" />
       <workItem from="1705033142330" duration="5000" />
+      <workItem from="1705038359052" duration="12971000" />
     </task>
     <servers />
   </component>

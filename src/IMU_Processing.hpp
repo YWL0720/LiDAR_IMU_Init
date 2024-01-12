@@ -52,6 +52,7 @@ class ImuProcess
   void set_gyr_bias_cov(const V3D &b_g);
   void set_acc_bias_cov(const V3D &b_a);
   void Process(const MeasureGroup &meas, StatesGroup &state, PointCloudXYZI::Ptr pcl_un_);
+  void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI &pcl_out);
 
 
 //  ros::NodeHandle nh;
@@ -67,6 +68,7 @@ class ImuProcess
   double first_lidar_time;
   int    lidar_type;
   bool   imu_en;
+  bool   undistort_iter;
   bool LI_init_done = false;
   double IMU_mean_acc_norm;
 
@@ -93,6 +95,7 @@ ImuProcess::ImuProcess()
     : b_first_frame_(true), imu_need_init_(true)
 {
   imu_en = true;
+  undistort_iter = true;
   init_iter_num = 1;
   cov_acc         = V3D(0.1, 0.1, 0.1);
   cov_gyr         = V3D(0.1, 0.1, 0.1);
@@ -233,7 +236,6 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     F_x.block<3, 3>(0, 15) = Eye3d * dt;
     F_x.block<3, 3>(3, 12) = Eye3d * dt;
 
-
     cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale * dt * dt;
     cov_w.block<3, 3>(12, 12).diagonal() = cov_acc_scale * dt * dt;
 
@@ -247,7 +249,7 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     state_inout.pos_end += state_inout.vel_end * dt;
 
     /**CV model： un-distort pcl using linear interpolation **/
-    if(lidar_type != L515)
+    if(lidar_type != L515 && !undistort_iter)
     {
         auto it_pcl = pcl_out.points.end() - 1;
         double dt_j = 0.0;
@@ -269,6 +271,34 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
         }
     }
 }
+
+void ImuProcess::undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI &pcl_out)
+{
+    if(lidar_type != L515)
+    {
+        const double &pcl_end_offset_time = pcl_out.points.back().curvature / double(1000);
+        auto it_pcl = pcl_out.points.end() - 1;
+        double dt_j = 0.0;
+        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+        {
+            dt_j= pcl_end_offset_time - it_pcl->curvature/double(1000);
+            M3D R_jk(Exp(state_inout.bias_g, - dt_j));
+            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+            // Using rotation and translation to un-distort points
+            V3D p_jk;
+            p_jk = - state_inout.rot_end.transpose() * state_inout.vel_end * dt_j;
+
+            V3D P_compensate =  R_jk * P_j + p_jk;
+
+            /// save Undistorted points and their rotation
+            it_pcl->x = P_compensate(0);
+            it_pcl->y = P_compensate(1);
+            it_pcl->z = P_compensate(2);
+        }
+    }
+}
+
+
 
 void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &state_inout, PointCloudXYZI &pcl_out)
 {
