@@ -1,9 +1,9 @@
 common:
-    lid_topic:  "/livox/lidar"
+    lid_topic:  "/3rgbd/points2"
     imu_topic:  "/livox/imu"
 
 preprocess:
-    lidar_type: 1                # Livox series LiDAR
+    lidar_type: 4                # Livox series LiDAR
     feature_extract_en: false
     scan_line: 6
     blind: 1
@@ -19,16 +19,16 @@ initialization:
     Trans_LI_cov: [ 0.00001, 0.00001, 0.00001 ]
 
 mapping:
-    filter_size_surf: 0.3
-    filter_size_map: 0.3
-    scale_mid: 1.33
-    scale_big: 1.66
+    filter_size_surf: 0.01
+    filter_size_map: 0.01
+    scale_mid: 10
+    scale_big: 20
     gyr_cov: 50
     acc_cov: 2
     b_acc_cov: 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
-    imu_en: true
+    imu_en: false
     extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
     extrinsic_R: [ 1, 0, 0,
                        0, 1, 0,

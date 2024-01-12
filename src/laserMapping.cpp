@@ -79,8 +79,8 @@ double filter_size_surf_min = 0, filter_size_map_min = 0;
 double filter_size_surf_min_small = 0, filter_size_map_min_small = 0;
 double filter_size_surf_min_mid = 0, filter_size_map_min_mid = 0;
 double filter_size_surf_min_big = 0, filter_size_map_min_big = 0;
-int scale_mid = 2;
-int scale_big = 3;
+float scale_mid = 2;
+float scale_big = 3;
 
 double cube_len = 0, total_distance = 0, lidar_end_time = 0, first_lidar_time = 0.0;
 
@@ -177,6 +177,12 @@ KD_TREE ikdtree_mid;
 KD_TREE ikdtree_big;
 /*******************************************/
 
+/*** 使用IMU ***/
+vector<double>       extrinT(3, 0.0);
+vector<double>       extrinR(9, 0.0);
+V3D Lidar_T_wrt_IMU(Zero3d);
+M3D Lidar_R_wrt_IMU(Eye3d);
+/*******************************************/
 
 M3D last_rot(M3D::Zero());
 V3F XAxisPoint_body(LIDAR_SP_LEN, 0.0, 0.0);
@@ -533,6 +539,8 @@ bool sync_packages(MeasureGroup &meas) {
     return true;
 }
 
+
+
 bool sync_packages_only_lidar(MeasureGroup &meas) {
     if (lidar_buffer.empty())
         return false;
@@ -564,6 +572,17 @@ bool sync_packages_only_lidar(MeasureGroup &meas) {
     return true;
 }
 
+bool sync_packages_both(MeasureGroup& meas)
+{
+    if (imu_en)
+    {
+        return sync_packages(meas);
+    }
+    else
+    {
+        return sync_packages_only_lidar(meas);
+    }
+}
 
 int process_increments = 0;
 
@@ -975,8 +994,8 @@ int main(int argc, char **argv) {
     nh.param<double>("mapping/filter_size_surf", filter_size_surf_min, 0.5);
     nh.param<double>("mapping/filter_size_map", filter_size_map_min, 0.5);
     nh.param<double>("mapping/filter_size_map", filter_size_map_min, 0.5);
-    nh.param<int>("mapping/scale_mid", scale_mid, 2);
-    nh.param<int>("mapping/scale_big", scale_big, 3);
+    nh.param<float>("mapping/scale_mid", scale_mid, 2);
+    nh.param<float>("mapping/scale_big", scale_big, 3);
     nh.param<double>("cube_side_length", cube_len, 200);
     nh.param<float>("mapping/det_range", DET_RANGE, 300.f);
     nh.param<double>("mapping/gyr_cov", gyr_cov, 0.1);
@@ -1004,6 +1023,9 @@ int main(int argc, char **argv) {
     nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
     nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
     nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
+    nh.param<bool>("mapping/imu_en", imu_en, false);\
+    nh.param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
+    nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
 
 
     /*** 给体素尺寸赋值 ***/
@@ -1016,6 +1038,7 @@ int main(int argc, char **argv) {
     filter_size_map_min_big = filter_size_map_min * scale_big;
 
     cout << "***************************" << endl;
+    cout << "use imu = " << imu_en << endl;
     cout << "small surf size = " << filter_size_surf_min_small << endl;
     cout << "mid surf size = " << filter_size_surf_min_mid << endl;
     cout << "big surf size = " << filter_size_surf_min_big << endl;
@@ -1055,9 +1078,9 @@ int main(int argc, char **argv) {
     memset(res_last, -1000.0f, sizeof(res_last));
 
     /*** 初始化 ***/
-    memset(point_selected_surf_small, true, sizeof(point_selected_surf));
-    memset(point_selected_surf_mid, true, sizeof(point_selected_surf));
-    memset(point_selected_surf_big, true, sizeof(point_selected_surf));
+    memset(point_selected_surf_small, true, sizeof(point_selected_surf_small));
+    memset(point_selected_surf_mid, true, sizeof(point_selected_surf_mid));
+    memset(point_selected_surf_big, true, sizeof(point_selected_surf_big));
     /*******************************************/
 
 
@@ -1066,9 +1089,9 @@ int main(int argc, char **argv) {
     downSizeFilterSurf_mid.setLeafSize(filter_size_surf_min_mid, filter_size_surf_min_mid, filter_size_surf_min_mid);
     downSizeFilterSurf_big.setLeafSize(filter_size_surf_min_big, filter_size_surf_min_big, filter_size_surf_min_big);
 
-    downSizeFilterMap_small.setLeafSize(filter_size_map_min_small, filter_size_map_min, filter_size_map_min);
-    downSizeFilterMap_mid.setLeafSize(filter_size_map_min_mid, filter_size_map_min, filter_size_map_min);
-    downSizeFilterMap_big.setLeafSize(filter_size_map_min_big, filter_size_map_min, filter_size_map_min);
+    downSizeFilterMap_small.setLeafSize(filter_size_map_min_small, filter_size_map_min_small, filter_size_map_min_small);
+    downSizeFilterMap_mid.setLeafSize(filter_size_map_min_mid, filter_size_map_min_mid, filter_size_map_min_mid);
+    downSizeFilterMap_big.setLeafSize(filter_size_map_min_big, filter_size_map_min_big, filter_size_map_min_big);
     /*******************************************/
 
 
@@ -1083,6 +1106,16 @@ int main(int argc, char **argv) {
     p_imu->set_T_LI_cov(V3D(VEC_FROM_ARRAY(Trans_LI_cov)));
     p_imu->set_gyr_bias_cov(V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov));
     p_imu->set_acc_bias_cov(V3D(b_acc_cov, b_acc_cov, b_acc_cov));
+
+    /*** 设置IMU外参 ***/
+    Lidar_T_wrt_IMU<<VEC_FROM_ARRAY(extrinT);
+    Lidar_R_wrt_IMU<<MAT_FROM_ARRAY(extrinR);
+    if (p_imu->imu_en)
+    {
+        state.offset_R_L_I = Lidar_R_wrt_IMU;
+        state.offset_T_L_I = Lidar_T_wrt_IMU;
+    }
+    /*******************************************/
 
 
     G.setZero();
@@ -1139,7 +1172,7 @@ int main(int argc, char **argv) {
     {
         if (flg_exit) break;
         ros::spinOnce();
-        if (sync_packages_only_lidar(Measures))
+        if (sync_packages_both(Measures))
         {
             if (flg_reset)
             {
@@ -1233,7 +1266,6 @@ int main(int argc, char **argv) {
                     }
                     ikdtree_big.Build(feats_down_world_big->points);
                 }
-
                 continue;
             }
             /*******************************************/
@@ -1272,7 +1304,6 @@ int main(int argc, char **argv) {
 
 
             /*** iterated state estimation ***/
-            // TODO
             std::vector<M3D> body_var;
             std::vector<M3D> crossmat_list;
             body_var.reserve(feats_down_size);
@@ -1311,7 +1342,7 @@ int main(int argc, char **argv) {
                     {
                         /** Find the closest surfaces in the map **/
                         // 查询当前世界坐标系下的预测点，在kdtree中的最近邻点序列
-                        ikdtree_small.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
+                        ikdtree_big.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
                         // 找到的最近点数量是否满足要求 最近点数量大于等于5个 且最远的点距离不大于5
                         if (points_near.size() < NUM_MATCH_POINTS)
                             point_selected_surf_big[i] = false;
@@ -1357,7 +1388,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
-
+                cout << "size big effect_feat_num : " << effect_feat_num << endl;
                 res_mean_last = total_residual / effect_feat_num;
 
                 /*** Computation of Measurement Jacobian matrix H and measurents vector ***/
@@ -1443,171 +1474,7 @@ int main(int argc, char **argv) {
 
             }
 
-            /// 第二次迭代 size = big
-            {
-                laserCloudOri->clear();
-                corr_normvect->clear();
-                total_residual = 0.0;
-
-                // 是否使用openmp
-                /** closest surface search and residual computation **/
-                #ifdef MP_EN
-                omp_set_num_threads(MP_PROC_NUM);
-                #pragma omp parallel for
-                #endif
-                for (int i = 0; i < feats_down_size_big; i++)
-                {
-                    // 雷达坐标系下的点
-                    PointType &point_body = feats_down_body_big->points[i];
-                    // 世界坐标系下的点
-                    PointType &point_world = feats_down_world_big->points[i];
-                    V3D p_body(point_body.x, point_body.y, point_body.z);
-                    /// transform to world frame
-                    // 转换到世界坐标系啊下，按照当前的预测位姿
-                    pointBodyToWorld(&point_body, &point_world);
-                    // 最近邻点序列的具体距离值
-                    vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
-                    // 最近邻点序列
-                    auto &points_near = Nearest_Points_big[i];
-                    uint8_t search_flag = 0;
-                    /// 每次都进行重新匹配
-                    if (0)
-                    {
-                        /** Find the closest surfaces in the map **/
-                        // 查询当前世界坐标系下的预测点，在kdtree中的最近邻点序列
-                        ikdtree_small.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
-                        // 找到的最近点数量是否满足要求 最近点数量大于等于5个 且最远的点距离不大于5
-                        if (points_near.size() < NUM_MATCH_POINTS)
-                            point_selected_surf_big[i] = false;
-                        else
-                            point_selected_surf_big[i] = !(pointSearchSqDis[NUM_MATCH_POINTS - 1] > 5);
-                    }
-
-                    res_last[i] = -1000.0f;
-
-                    // 不满足面点要求的将会剔除
-                    if (!point_selected_surf_big[i] || points_near.size() < NUM_MATCH_POINTS)
-                    {
-                        point_selected_surf_big[i] = false;
-                        continue;
-                    }
-
-                    point_selected_surf_big[i] = false;
-                    VD(4) pabcd;
-                    pabcd.setZero();
-                    if (esti_plane(pabcd, points_near, 0.1)) //(planeValid)
-                    {
-                        float pd2 = pabcd(0) * point_world.x + pabcd(1) * point_world.y + pabcd(2) * point_world.z +
-                                    pabcd(3);
-                        float s = 1 - 0.9 * fabs(pd2) / sqrt(p_body.norm());
-
-                        if (s > 0.9) {
-                            point_selected_surf_big[i] = true;
-                            normvec_big->points[i].x = pabcd(0);
-                            normvec_big->points[i].y = pabcd(1);
-                            normvec_big->points[i].z = pabcd(2);
-                            normvec_big->points[i].intensity = pd2;
-                            res_last[i] = abs(pd2);
-                        }
-                    }
-                }
-                effect_feat_num = 0;
-                for (int i = 0; i < feats_down_size_big; i++)
-                {
-                    if (point_selected_surf_big[i])
-                    {
-                        laserCloudOri->points[effect_feat_num] = feats_down_body_big->points[i];
-                        corr_normvect->points[effect_feat_num] = normvec_big->points[i];
-                        effect_feat_num++;
-                    }
-                }
-
-                res_mean_last = total_residual / effect_feat_num;
-
-                /*** Computation of Measurement Jacobian matrix H and measurents vector ***/
-
-                MatrixXd Hsub(effect_feat_num, 12);
-                MatrixXd Hsub_T_R_inv(12, effect_feat_num);
-                VectorXd R_inv(effect_feat_num);
-                VectorXd meas_vec(effect_feat_num);
-
-                Hsub.setZero();
-                Hsub_T_R_inv.setZero();
-                meas_vec.setZero();
-
-                for (int i = 0; i < effect_feat_num; i++)
-                {
-                    const PointType &laser_p = laserCloudOri->points[i];
-                    V3D point_this_L(laser_p.x, laser_p.y, laser_p.z);
-
-                    V3D point_this = state.offset_R_L_I * point_this_L + state.offset_T_L_I;
-                    M3D var;
-                    calcBodyVar(point_this, 0.02, 0.05, var);
-                    var = state.rot_end * var * state.rot_end.transpose();
-                    M3D point_crossmat;
-                    point_crossmat << SKEW_SYM_MATRX(point_this);
-
-                    /*** get the normal vector of closest surface/corner ***/
-                    const PointType &norm_p = corr_normvect->points[i];
-                    V3D norm_vec(norm_p.x, norm_p.y, norm_p.z);
-
-                    R_inv(i) = 1000;
-                    laserCloudOri->points[i].intensity = sqrt(R_inv(i));
-
-                    /*** calculate the Measurement Jacobian matrix H ***/
-                    if (imu_en)
-                    {
-                        M3D point_this_L_cross;
-                        point_this_L_cross << SKEW_SYM_MATRX(point_this_L);
-                        V3D H_R_LI = point_this_L_cross * state.offset_R_L_I.transpose() * state.rot_end.transpose() *
-                                     norm_vec;
-                        V3D H_T_LI = state.rot_end.transpose() * norm_vec;
-                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
-                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, VEC_FROM_ARRAY(
-                                H_R_LI), VEC_FROM_ARRAY(H_T_LI);
-                    }
-                    else
-                    {
-                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
-                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
-                    }
-
-                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
-                    /*** Measurement: distance to the closest surface/corner ***/
-                    meas_vec(i) = -norm_p.intensity;
-                }
-
-                MatrixXd K(DIM_STATE, effect_feat_num);
-
-                EKF_stop_flg = false;
-                flg_EKF_converged = false;
-
-                /*** Iterative Kalman Filter Update ***/
-
-                H_T_H.block<12, 12>(0, 0) = Hsub_T_R_inv * Hsub;
-                MD(DIM_STATE, DIM_STATE) &&K_1 = (H_T_H + state.cov.inverse()).inverse();
-                K = K_1.block<DIM_STATE, 12>(0, 0) * Hsub_T_R_inv;
-                auto vec = state_propagat - state;
-                solution = K * meas_vec + vec - K * Hsub * vec.block<12, 1>(0, 0);
-
-                //state update
-                state += solution;
-
-                rot_add = solution.block<3, 1>(0, 0);
-                T_add = solution.block<3, 1>(3, 0);
-
-
-                if ((rot_add.norm() * 57.3 < 0.01) && (T_add.norm() * 100 < 0.015))
-                    flg_EKF_converged = true;
-
-                deltaR = rot_add.norm() * 57.3;
-                deltaT = T_add.norm() * 100;
-
-                euler_cur = RotMtoEuler(state.rot_end);
-
-            }
-
-            /// 第三次迭代 size = mid
+            /// 第二次迭代 size = mid
             {
                 laserCloudOri->clear();
                 corr_normvect->clear();
@@ -1686,6 +1553,7 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
+                cout << "size mid effect_feat_num : " << effect_feat_num << endl;
 
                 res_mean_last = total_residual / effect_feat_num;
 
@@ -1772,7 +1640,7 @@ int main(int argc, char **argv) {
 
             }
 
-            /// 第四次迭代 size = small + 更新协方差
+            /// 第三次迭代 size = small
             {
                 laserCloudOri->clear();
                 corr_normvect->clear();
@@ -1851,6 +1719,172 @@ int main(int argc, char **argv) {
                         effect_feat_num++;
                     }
                 }
+                cout << "size small effect_feat_num : " << effect_feat_num << endl;
+
+                res_mean_last = total_residual / effect_feat_num;
+
+                /*** Computation of Measurement Jacobian matrix H and measurents vector ***/
+
+                MatrixXd Hsub(effect_feat_num, 12);
+                MatrixXd Hsub_T_R_inv(12, effect_feat_num);
+                VectorXd R_inv(effect_feat_num);
+                VectorXd meas_vec(effect_feat_num);
+
+                Hsub.setZero();
+                Hsub_T_R_inv.setZero();
+                meas_vec.setZero();
+
+                for (int i = 0; i < effect_feat_num; i++)
+                {
+                    const PointType &laser_p = laserCloudOri->points[i];
+                    V3D point_this_L(laser_p.x, laser_p.y, laser_p.z);
+
+                    V3D point_this = state.offset_R_L_I * point_this_L + state.offset_T_L_I;
+                    M3D var;
+                    calcBodyVar(point_this, 0.02, 0.05, var);
+                    var = state.rot_end * var * state.rot_end.transpose();
+                    M3D point_crossmat;
+                    point_crossmat << SKEW_SYM_MATRX(point_this);
+
+                    /*** get the normal vector of closest surface/corner ***/
+                    const PointType &norm_p = corr_normvect->points[i];
+                    V3D norm_vec(norm_p.x, norm_p.y, norm_p.z);
+
+                    R_inv(i) = 1000;
+                    laserCloudOri->points[i].intensity = sqrt(R_inv(i));
+
+                    /*** calculate the Measurement Jacobian matrix H ***/
+                    if (imu_en)
+                    {
+                        M3D point_this_L_cross;
+                        point_this_L_cross << SKEW_SYM_MATRX(point_this_L);
+                        V3D H_R_LI = point_this_L_cross * state.offset_R_L_I.transpose() * state.rot_end.transpose() *
+                                     norm_vec;
+                        V3D H_T_LI = state.rot_end.transpose() * norm_vec;
+                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
+                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, VEC_FROM_ARRAY(
+                                H_R_LI), VEC_FROM_ARRAY(H_T_LI);
+                    }
+                    else
+                    {
+                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
+                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
+                    }
+
+                    Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() * 1000;
+                    /*** Measurement: distance to the closest surface/corner ***/
+                    meas_vec(i) = -norm_p.intensity;
+                }
+
+                MatrixXd K(DIM_STATE, effect_feat_num);
+
+                EKF_stop_flg = false;
+                flg_EKF_converged = false;
+
+                /*** Iterative Kalman Filter Update ***/
+
+                H_T_H.block<12, 12>(0, 0) = Hsub_T_R_inv * Hsub;
+                MD(DIM_STATE, DIM_STATE) &&K_1 = (H_T_H + state.cov.inverse()).inverse();
+                K = K_1.block<DIM_STATE, 12>(0, 0) * Hsub_T_R_inv;
+                auto vec = state_propagat - state;
+                solution = K * meas_vec + vec - K * Hsub * vec.block<12, 1>(0, 0);
+
+                //state update
+                state += solution;
+
+                rot_add = solution.block<3, 1>(0, 0);
+                T_add = solution.block<3, 1>(3, 0);
+
+
+                if ((rot_add.norm() * 57.3 < 0.01) && (T_add.norm() * 100 < 0.015))
+                    flg_EKF_converged = true;
+
+                deltaR = rot_add.norm() * 57.3;
+                deltaT = T_add.norm() * 100;
+
+                euler_cur = RotMtoEuler(state.rot_end);
+            }
+
+            /// 第四次迭代 size = small + 更新协方差
+            {
+                laserCloudOri->clear();
+                corr_normvect->clear();
+                total_residual = 0.0;
+
+                // 是否使用openmp
+                /** closest surface search and residual computation **/
+                #ifdef MP_EN
+                omp_set_num_threads(MP_PROC_NUM);
+                #pragma omp parallel for
+                #endif
+                for (int i = 0; i < feats_down_size_small; i++)
+                {
+                    // 雷达坐标系下的点
+                    PointType &point_body = feats_down_body_small->points[i];
+                    // 世界坐标系下的点
+                    PointType &point_world = feats_down_world_small->points[i];
+                    V3D p_body(point_body.x, point_body.y, point_body.z);
+                    /// transform to world frame
+                    // 转换到世界坐标系啊下，按照当前的预测位姿
+                    pointBodyToWorld(&point_body, &point_world);
+                    // 最近邻点序列的具体距离值
+                    vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
+                    // 最近邻点序列
+                    auto &points_near = Nearest_Points_small[i];
+                    uint8_t search_flag = 0;
+                    /// 每次都进行重新匹配
+                    if (0)
+                    {
+                        /** Find the closest surfaces in the map **/
+                        // 查询当前世界坐标系下的预测点，在kdtree中的最近邻点序列
+                        ikdtree_small.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
+                        // 找到的最近点数量是否满足要求 最近点数量大于等于5个 且最远的点距离不大于5
+                        if (points_near.size() < NUM_MATCH_POINTS)
+                            point_selected_surf_small[i] = false;
+                        else
+                            point_selected_surf_small[i] = !(pointSearchSqDis[NUM_MATCH_POINTS - 1] > 5);
+                    }
+
+                    res_last[i] = -1000.0f;
+
+                    // 不满足面点要求的将会剔除
+                    if (!point_selected_surf_small[i] || points_near.size() < NUM_MATCH_POINTS)
+                    {
+                        point_selected_surf_small[i] = false;
+                        continue;
+                    }
+
+                    point_selected_surf_small[i] = false;
+                    VD(4) pabcd;
+                    pabcd.setZero();
+                    if (esti_plane(pabcd, points_near, 0.1)) //(planeValid)
+                    {
+                        float pd2 = pabcd(0) * point_world.x + pabcd(1) * point_world.y + pabcd(2) * point_world.z +
+                                    pabcd(3);
+                        float s = 1 - 0.9 * fabs(pd2) / sqrt(p_body.norm());
+
+                        if (s > 0.9)
+                        {
+                            point_selected_surf_small[i] = true;
+                            normvec_small->points[i].x = pabcd(0);
+                            normvec_small->points[i].y = pabcd(1);
+                            normvec_small->points[i].z = pabcd(2);
+                            normvec_small->points[i].intensity = pd2;
+                            res_last[i] = abs(pd2);
+                        }
+                    }
+                }
+                effect_feat_num = 0;
+                for (int i = 0; i < feats_down_size_small; i++)
+                {
+                    if (point_selected_surf_small[i])
+                    {
+                        laserCloudOri->points[effect_feat_num] = feats_down_body_small->points[i];
+                        corr_normvect->points[effect_feat_num] = normvec_small->points[i];
+                        effect_feat_num++;
+                    }
+                }
+                cout << "size small effect_feat_num : " << effect_feat_num << endl;
 
                 res_mean_last = total_residual / effect_feat_num;
 
@@ -1941,10 +1975,12 @@ int main(int argc, char **argv) {
                 state.cov = (I_STATE - G) * state.cov;
                 total_distance += (state.pos_end - position_last).norm();
                 position_last = state.pos_end;
-                if (!imu_en) {
+                if (!imu_en)
+                {
                     geoQuat = tf::createQuaternionMsgFromRollPitchYaw
                             (euler_cur(0), euler_cur(1), euler_cur(2));
-                } else {
+                } else
+                {
                     //Publish LiDAR's pose, instead of IMU's pose
                     M3D rot_cur_lidar = state.rot_end * state.offset_R_L_I;
                     V3D euler_cur_lidar = RotMtoEuler(rot_cur_lidar);
@@ -1955,7 +1991,6 @@ int main(int argc, char **argv) {
                 VD(DIM_STATE) P_diag = state.cov.diagonal();
             }
 
-            cout << feats_down_size_big << " " << feats_down_size_small << " " << feats_down_size_mid << endl;
             /******* Publish odometry *******/
             publish_odometry(pubOdomAftMapped);
 

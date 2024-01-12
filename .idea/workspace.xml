@@ -130,7 +130,9 @@
     <list default="true" id="9f71a6ed-9c5a-40b4-b21e-7c001bdebdbd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Log/mat_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Log/mat_out.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/velodyne.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/velodyne.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/mid360.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/mid360.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/IMU_Processing.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/IMU_Processing.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/laserMapping.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/laserMapping.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -166,7 +168,7 @@
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/ywl/ws_11/src/LiDAR_IMU_Init/CMakeLists.txt&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/ywl/ws_13/src/LiDAR_IMU_Init&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;structure.view.defaults.are.configured&quot;: &quot;true&quot;
   }
@@ -178,11 +180,6 @@
       </method>
     </configuration>
     <configuration name="_lidar_imu_init_generate_messages_check_deps_States" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="_lidar_imu_init_generate_messages_check_deps_States" CONFIG_NAME="Debug">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -857,6 +854,8 @@
       <workItem from="1704782987789" duration="9789000" />
       <workItem from="1704802255664" duration="1000" />
       <workItem from="1704893988138" duration="3675000" />
+      <workItem from="1704969355951" duration="12995000" />
+      <workItem from="1705033142330" duration="5000" />
     </task>
     <servers />
   </component>

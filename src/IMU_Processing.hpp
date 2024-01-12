@@ -429,7 +429,8 @@ void ImuProcess::Process(const MeasureGroup &meas, StatesGroup &stat, PointCloud
 
     if (imu_need_init_)
     {
-        if(!LI_init_done){
+        if(1)
+        {
             /// The very first lidar frame
             IMU_init(meas, stat, init_iter_num);
             imu_need_init_ = true;
