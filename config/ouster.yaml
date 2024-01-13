@@ -1,10 +1,10 @@
 common:
-    lid_topic:  "/os_cloud_node/points"
+    lid_topic:  "/os1_cloud_node1/points"
     imu_topic:  "/mavros/imu/data_raw"
 
 preprocess:
     lidar_type: 3                # Ouster LiDAR
-    scan_line: 128
+    scan_line: 16
     blind: 4
     feature_extract_en: false
 
@@ -18,13 +18,22 @@ initialization:
     Trans_LI_cov: [ 0.0001, 0.0001, 0.0001 ]
 
 mapping:
-    filter_size_surf: 0.05
-    filter_size_map: 0.15
-    gyr_cov: 50
-    acc_cov: 2
-    b_acc_cov: 0.0001
+    filter_size_surf: 0.5
+    filter_size_map: 0.5
+    scale_mid: 2
+    scale_big: 3
+    gyr_cov: 0.5
+    acc_cov: 0.5
+    b_acc_cov: 0.0001 # 0.0001
     b_gyr_cov: 0.0001
-    det_range: 150.0
+    det_range: 100.0
+    imu_en: false
+    extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
+    extrinsic_R: [ 1, 0, 0,
+                       0, 1, 0,
+                       0, 0, 1 ]
+    undistort_iter: true
+    cov_lidar: 0.00001
 
 publish:
     path_en:  true

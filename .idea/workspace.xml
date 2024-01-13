@@ -131,10 +131,13 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Log/mat_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Log/mat_out.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/mid360.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/mid360.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/ouster.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/ouster.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/robosense.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/robosense.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/velodyne.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/velodyne.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rviz_cfg/spinning.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/spinning.rviz" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/IMU_Processing.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/IMU_Processing.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/laserMapping.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/laserMapping.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/preprocess.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/preprocess.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -169,17 +172,12 @@
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/ywl/ws_13/src/LiDAR_IMU_Init&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/ywl/ws_11/src/LiDAR_IMU_Init&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;structure.view.defaults.are.configured&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RunManager" selected="CMake Application.li_init">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="_lidar_imu_init_generate_messages_check_deps_Pose6D" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="_lidar_imu_init_generate_messages_check_deps_Pose6D" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -863,6 +861,12 @@
       <workItem from="1704969355951" duration="12995000" />
       <workItem from="1705033142330" duration="5000" />
       <workItem from="1705038359052" duration="12971000" />
+      <workItem from="1705070339932" duration="83000" />
+      <workItem from="1705070430920" duration="18000" />
+      <workItem from="1705070460943" duration="29000" />
+      <workItem from="1705070503413" duration="1217000" />
+      <workItem from="1705073172691" duration="1235000" />
+      <workItem from="1705124851579" duration="2110000" />
     </task>
     <servers />
   </component>

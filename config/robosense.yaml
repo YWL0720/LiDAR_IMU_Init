@@ -4,7 +4,7 @@ common:
 
 preprocess:
     lidar_type: 6                # Robosense LiDAR
-    scan_line: 128
+    scan_line: 16
     blind: 2
     feature_extract_en: false
 
@@ -18,13 +18,22 @@ initialization:
     Trans_LI_cov: [ 0.0001, 0.0001, 0.0001 ]
 
 mapping:
-    filter_size_surf: 0.05
-    filter_size_map: 0.15
+    filter_size_surf: 0.3
+    filter_size_map: 0.3
+    scale_mid: 1.33
+    scale_big: 1.66
     gyr_cov: 0.5
     acc_cov: 0.5
-    b_acc_cov: 0.0001
+    b_acc_cov: 0.0001 # 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
+    imu_en: false
+    extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1 ]
+    undistort_iter: true
+    cov_lidar: 0.00001
 
 publish:
     path_en:  true

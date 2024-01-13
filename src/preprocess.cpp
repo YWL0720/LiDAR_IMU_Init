@@ -369,8 +369,10 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
     }
     uint valid_num = 0;
 
-    if (feature_enabled) {
-        for (uint i = 1; i < plsize; i++) {
+    if (feature_enabled)
+    {
+        for (uint i = 1; i < plsize; i++)
+        {
             if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10) ||
                 ((msg->points[i].tag & 0x30) == 0x00)) {
                 pl_full[i].x = msg->points[i].x;
@@ -574,7 +576,7 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
     float time_last[MAX_LINE_NUM] = {0.0}; // last offset time
 
     if (pl_orig.points[plsize - 1].time > 0) {
-        given_offset_time = true;
+        given_offset_time = false;
     } else {
 //        cout << "Compute offset time using constant rotation model." << endl;
         given_offset_time = false;

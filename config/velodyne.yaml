@@ -9,6 +9,7 @@ preprocess:
     feature_extract_en: false
 
 initialization:
+    cut_frame: false
     cut_frame_num: 4 # must be positive integer
     orig_odom_freq: 10
     mean_acc_norm: 9.81 # 1: for livox built-in IMU
@@ -32,7 +33,7 @@ mapping:
     extrinsic_R: [ 1, 0, 0,
                    0, 1, 0,
                    0, 0, 1 ]
-    undistort_iter: false
+    undistort_iter: true
     cov_lidar: 0.001
 
 publish:

@@ -52,7 +52,7 @@ class ImuProcess
   void set_gyr_bias_cov(const V3D &b_g);
   void set_acc_bias_cov(const V3D &b_a);
   void Process(const MeasureGroup &meas, StatesGroup &state, PointCloudXYZI::Ptr pcl_un_);
-  void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI &pcl_out);
+  void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI::Ptr pcl_out);
 
 
 //  ros::NodeHandle nh;
@@ -272,14 +272,15 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     }
 }
 
-void ImuProcess::undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI &pcl_out)
+void ImuProcess::undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI::Ptr pcl_out)
 {
     if(lidar_type != L515)
     {
-        const double &pcl_end_offset_time = pcl_out.points.back().curvature / double(1000);
-        auto it_pcl = pcl_out.points.end() - 1;
+        sort(pcl_out->points.begin(), pcl_out->points.end(), time_list);
+        const double &pcl_end_offset_time = pcl_out->points.back().curvature / double(1000);
+        auto it_pcl = pcl_out->points.end() - 1;
         double dt_j = 0.0;
-        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+        for(; it_pcl != pcl_out->points.begin(); it_pcl --)
         {
             dt_j= pcl_end_offset_time - it_pcl->curvature/double(1000);
             M3D R_jk(Exp(state_inout.bias_g, - dt_j));

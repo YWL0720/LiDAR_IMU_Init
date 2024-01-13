@@ -386,18 +386,22 @@ void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
         printf("Self sync IMU and LiDAR, HARD time lag is %.10lf \n \n", timediff_imu_wrt_lidar);
     }
 
-    if (cut_frame) {
+    if (cut_frame)
+    {
         deque<PointCloudXYZI::Ptr> ptr;
         deque<double> timestamp_lidar;
         p_pre->process_cut_frame_livox(msg, ptr, timestamp_lidar, cut_frame_num, scan_count);
 
-        while (!ptr.empty() && !timestamp_lidar.empty()) {
+        while (!ptr.empty() && !timestamp_lidar.empty())
+        {
             lidar_buffer.push_back(ptr.front());
             ptr.pop_front();
             time_buffer.push_back(timestamp_lidar.front() / double(1000));//unit:s
             timestamp_lidar.pop_front();
         }
-    } else {
+    }
+    else
+    {
         PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
         p_pre->process(msg, ptr);
         lidar_buffer.push_back(ptr);
@@ -1323,7 +1327,7 @@ int main(int argc, char **argv) {
             /// 去畸变
             if (!imu_en && undistort_iter)
             {
-                p_imu->undistort_without_imu(state, *feats_down_body_big);
+                p_imu->undistort_without_imu(state, feats_down_body_big);
             }
 
             /// 第一次迭代 size = big
@@ -1493,7 +1497,7 @@ int main(int argc, char **argv) {
             /// 去畸变
             if (!imu_en && undistort_iter)
             {
-                p_imu->undistort_without_imu(state, *feats_down_body_mid);
+                p_imu->undistort_without_imu(state, feats_down_body_mid);
             }
 
             /// 第二次迭代 size = mid
@@ -1666,7 +1670,7 @@ int main(int argc, char **argv) {
             /// 去畸变
             if (!imu_en && undistort_iter)
             {
-                p_imu->undistort_without_imu(state, *feats_down_body_small);
+                p_imu->undistort_without_imu(state, feats_down_body_small);
             }
 
             /// 第三次迭代 size = small

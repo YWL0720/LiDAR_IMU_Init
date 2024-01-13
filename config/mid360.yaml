@@ -23,8 +23,8 @@ mapping:
     filter_size_map: 0.3
     scale_mid: 1.33
     scale_big: 1.66
-    gyr_cov: 50
-    acc_cov: 2
+    gyr_cov: 0.5
+    acc_cov: 0.5
     b_acc_cov: 0.0001 # 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
@@ -34,7 +34,7 @@ mapping:
                        0, 1, 0,
                        0, 0, 1 ]
     undistort_iter: true
-    cov_lidar: 0.001
+    cov_lidar: 0.00001
 
 publish:
     path_en:  true
