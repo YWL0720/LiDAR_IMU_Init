@@ -35,6 +35,10 @@ else()
   add_definitions(-DMP_PROC_NUM=1)
 endif()
 
+add_subdirectory(Thirdparty/Sophus)
+
+
+
 find_package(OpenMP QUIET)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
@@ -64,11 +68,12 @@ message(Eigen: ${EIGEN3_INCLUDE_DIR})
 
 include_directories(
      ../../devel/include
-	${catkin_INCLUDE_DIRS} 
+	${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
-  include)
+  include
+  Thirdparty/Sophus)
 
 add_message_files(
   FILES
@@ -93,7 +98,7 @@ add_executable(li_init
         include/LI_init/LI_init.cpp
         src/preprocess.cpp)
 
-target_link_libraries(li_init ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(li_init ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${CERES_LIBRARIES} sophus)
 target_include_directories(li_init PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 

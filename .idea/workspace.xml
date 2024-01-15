@@ -22,6 +22,7 @@
       <config projectName="lidar_imu_init" targetName="tf_generate_messages_py" />
       <config projectName="lidar_imu_init" targetName="li_init" />
       <config projectName="lidar_imu_init" targetName="tf_generate_messages_nodejs" />
+      <config projectName="lidar_imu_init" targetName="HelloSO3" />
       <config projectName="lidar_imu_init" targetName="rosgraph_msgs_generate_messages_nodejs" />
       <config projectName="lidar_imu_init" targetName="dynamic_reconfigure_generate_messages_lisp" />
       <config projectName="lidar_imu_init" targetName="std_msgs_generate_messages_eus" />
@@ -31,14 +32,17 @@
       <config projectName="lidar_imu_init" targetName="clean_test_results" />
       <config projectName="lidar_imu_init" targetName="geometry_msgs_generate_messages_cpp" />
       <config projectName="lidar_imu_init" targetName="sensor_msgs_generate_messages_lisp" />
+      <config projectName="lidar_imu_init" targetName="other" />
       <config projectName="lidar_imu_init" targetName="nav_msgs_generate_messages_py" />
       <config projectName="lidar_imu_init" targetName="tf2_msgs_generate_messages_cpp" />
       <config projectName="lidar_imu_init" targetName="roscpp_generate_messages_py" />
       <config projectName="lidar_imu_init" targetName="livox_ros_driver_generate_messages_lisp" />
       <config projectName="lidar_imu_init" targetName="bond_generate_messages_nodejs" />
+      <config projectName="lidar_imu_init" targetName="test_sim2" />
       <config projectName="lidar_imu_init" targetName="roscpp_generate_messages_lisp" />
       <config projectName="lidar_imu_init" targetName="sensor_msgs_generate_messages_nodejs" />
       <config projectName="lidar_imu_init" targetName="actionlib_generate_messages_nodejs" />
+      <config projectName="lidar_imu_init" targetName="test_sim3" />
       <config projectName="lidar_imu_init" targetName="topic_tools_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="roscpp_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="nav_msgs_generate_messages_nodejs" />
@@ -47,6 +51,10 @@
       <config projectName="lidar_imu_init" targetName="geometry_msgs_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="pcl_ros_gencfg" />
       <config projectName="lidar_imu_init" targetName="tf2_msgs_generate_messages_nodejs" />
+      <config projectName="lidar_imu_init" targetName="test_rxso3" />
+      <config projectName="lidar_imu_init" targetName="test_se2" />
+      <config projectName="lidar_imu_init" targetName="test_rxso2" />
+      <config projectName="lidar_imu_init" targetName="test_se3" />
       <config projectName="lidar_imu_init" targetName="std_srvs_generate_messages_nodejs" />
       <config projectName="lidar_imu_init" targetName="geometry_msgs_generate_messages_lisp" />
       <config projectName="lidar_imu_init" targetName="tf_generate_messages_lisp" />
@@ -77,9 +85,12 @@
       <config projectName="lidar_imu_init" targetName="rosgraph_msgs_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="roscpp_generate_messages_nodejs" />
       <config projectName="lidar_imu_init" targetName="tf2_msgs_generate_messages_eus" />
+      <config projectName="lidar_imu_init" targetName="test_velocities" />
       <config projectName="lidar_imu_init" targetName="lidar_imu_init_gencpp" />
       <config projectName="lidar_imu_init" targetName="tf_generate_messages_cpp" />
+      <config projectName="lidar_imu_init" targetName="test_so2" />
       <config projectName="lidar_imu_init" targetName="gtest_main" />
+      <config projectName="lidar_imu_init" targetName="test_so3" />
       <config projectName="lidar_imu_init" targetName="gmock" />
       <config projectName="lidar_imu_init" targetName="lidar_imu_init_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="nodelet_generate_messages_nodejs" />
@@ -90,7 +101,9 @@
       <config projectName="lidar_imu_init" targetName="lidar_imu_init_generate_messages" />
       <config projectName="lidar_imu_init" targetName="gtest" />
       <config projectName="lidar_imu_init" targetName="rosgraph_msgs_generate_messages_py" />
+      <config projectName="lidar_imu_init" targetName="test_geometry" />
       <config projectName="lidar_imu_init" targetName="std_msgs_generate_messages_nodejs" />
+      <config projectName="lidar_imu_init" targetName="test_common" />
       <config projectName="lidar_imu_init" targetName="livox_ros_driver_generate_messages_cpp" />
       <config projectName="lidar_imu_init" targetName="lidar_imu_init_geneus" />
       <config projectName="lidar_imu_init" targetName="std_msgs_generate_messages_cpp" />
@@ -107,6 +120,8 @@
       <config projectName="lidar_imu_init" targetName="actionlib_msgs_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="bond_generate_messages_lisp" />
       <config projectName="lidar_imu_init" targetName="std_srvs_generate_messages_eus" />
+      <config projectName="lidar_imu_init" targetName="test_cartesian2" />
+      <config projectName="lidar_imu_init" targetName="test_cartesian3" />
       <config projectName="lidar_imu_init" targetName="sensor_msgs_generate_messages_cpp" />
       <config projectName="lidar_imu_init" targetName="bond_generate_messages_eus" />
       <config projectName="lidar_imu_init" targetName="pcl_msgs_generate_messages_eus" />
@@ -128,16 +143,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9f71a6ed-9c5a-40b4-b21e-7c001bdebdbd" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Log/mat_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Log/mat_out.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/mid360.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/mid360.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/ouster.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/ouster.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/robosense.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/robosense.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/velodyne.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/velodyne.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rviz_cfg/spinning.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/spinning.rviz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" beforeDir="false" afterPath="$PROJECT_DIR$/rviz_cfg/fast_lo.rviz" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/IMU_Processing.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/IMU_Processing.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/laserMapping.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/laserMapping.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/preprocess.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/preprocess.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,24 +174,37 @@
     <option name="minorVersion" value="2" />
   </component>
   <component name="ProjectId" id="2ahuA8o8W9B8FQZNY67zIemtw9l" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/ywl/ws_11/src/LiDAR_IMU_Init&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;structure.view.defaults.are.configured&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.advertisement.text.has.clang-format": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "ctest.advertisement.all.test.configuration.is.created": "true",
+    "last_opened_file_path": "/home/ywl/ws_14/src/ct-lio",
+    "nodejs_package_manager_path": "npm",
+    "structure.view.defaults.are.configured": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="CMake Application.li_init">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="HelloSO3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="HelloSO3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="HelloSO3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="_lidar_imu_init_generate_messages_check_deps_Pose6D" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="_lidar_imu_init_generate_messages_check_deps_Pose6D" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -493,6 +520,11 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
+    <configuration name="other" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="other" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="pcl_msgs_generate_messages_cpp" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="pcl_msgs_generate_messages_cpp" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -653,6 +685,71 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
+    <configuration name="test_cartesian2" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_cartesian2" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_cartesian2">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_cartesian3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_cartesian3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_cartesian3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_common" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_common" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_common">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_geometry" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_geometry" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_geometry">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_rxso2" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_rxso2" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_rxso2">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_rxso3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_rxso3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_rxso3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_se2" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_se2" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_se2">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_se3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_se3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_se3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_sim2" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_sim2" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_sim2">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_sim3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_sim3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_sim3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_so2" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_so2" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_so2">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_so3" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_so3" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_so3">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_velocities" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="test_velocities" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lidar_imu_init" RUN_TARGET_NAME="test_velocities">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="tests" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="tests" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -731,6 +828,12 @@
     <configuration name="topic_tools_generate_messages_py" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lidar_imu_init" TARGET_NAME="topic_tools_generate_messages_py" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="All CTest" type="CTestRunConfiguration" factoryName="CTestRun" PROGRAM_PARAMS="--extra-verbose" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$CMakeCurrentLocalGenerationDir$" PASS_PARENT_ENVS_2="true" RUN_PATH="$CTestCurrentExecutableName$" EXPLICIT_BUILD_TARGET_NAME="all" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
     <list>
@@ -841,10 +944,26 @@
       <item itemvalue="CMake Application.topic_tools_generate_messages_lisp" />
       <item itemvalue="CMake Application.topic_tools_generate_messages_nodejs" />
       <item itemvalue="CMake Application.topic_tools_generate_messages_py" />
+      <item itemvalue="CMake Application.other" />
+      <item itemvalue="CMake Application.HelloSO3" />
+      <item itemvalue="CMake Application.test_cartesian2" />
+      <item itemvalue="CMake Application.test_cartesian3" />
+      <item itemvalue="CMake Application.test_common" />
+      <item itemvalue="CMake Application.test_geometry" />
+      <item itemvalue="CMake Application.test_rxso2" />
+      <item itemvalue="CMake Application.test_rxso3" />
+      <item itemvalue="CMake Application.test_se2" />
+      <item itemvalue="CMake Application.test_se3" />
+      <item itemvalue="CMake Application.test_sim2" />
+      <item itemvalue="CMake Application.test_sim3" />
+      <item itemvalue="CMake Application.test_so2" />
+      <item itemvalue="CMake Application.test_so3" />
+      <item itemvalue="CMake Application.test_velocities" />
       <item itemvalue="CMake Application.gmock" />
       <item itemvalue="CMake Application.gmock_main" />
       <item itemvalue="CMake Application.gtest" />
       <item itemvalue="CMake Application.gtest_main" />
+      <item itemvalue="CTest Application.All CTest" />
     </list>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -866,7 +985,11 @@
       <workItem from="1705070460943" duration="29000" />
       <workItem from="1705070503413" duration="1217000" />
       <workItem from="1705073172691" duration="1235000" />
-      <workItem from="1705124851579" duration="2110000" />
+      <workItem from="1705124851579" duration="7830000" />
+      <workItem from="1705147724516" duration="7857000" />
+      <workItem from="1705212785918" duration="6976000" />
+      <workItem from="1705243384522" duration="1781000" />
+      <workItem from="1705297592806" duration="6059000" />
     </task>
     <servers />
   </component>

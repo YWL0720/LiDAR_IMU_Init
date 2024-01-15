@@ -26,6 +26,8 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <lidar_imu_init/States.h>
 #include <geometry_msgs/Vector3.h>
+#include "sophus/se3.hpp"
+#include "sophus/interpolate.hpp"
 
 /// *************Preconfiguration
 
@@ -53,9 +55,13 @@ class ImuProcess
   void set_acc_bias_cov(const V3D &b_a);
   void Process(const MeasureGroup &meas, StatesGroup &state, PointCloudXYZI::Ptr pcl_un_);
   void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI::Ptr pcl_out);
+  void undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end, PointCloudXYZI& pcl_out);
+  Eigen::Matrix4d delta_T = Eigen::Matrix4d::Identity();
+  Eigen::Matrix3d delta_R = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d delta_t = Eigen::Vector3d::Zero();
 
 
-//  ros::NodeHandle nh;
+    //  ros::NodeHandle nh;
   ofstream fout_imu;
   V3D cov_acc;
   V3D cov_gyr;
@@ -207,6 +213,7 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, StatesGroup &state_inout, in
 void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, StatesGroup &state_inout,
                              PointCloudXYZI &pcl_out) {
     pcl_out = *(meas.lidar);
+    StatesGroup state_begin = state_inout;
     /*** sort point clouds by offset time ***/
     const double &pcl_beg_time = meas.lidar_beg_time;
     sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);
@@ -215,13 +222,10 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     MD(DIM_STATE, DIM_STATE) F_x, cov_w;
     double dt = 0.0;
 
-    if (b_first_frame_)
-    {
+    if (b_first_frame_) {
         dt = 0.1;
         b_first_frame_ = false;
-    }
-    else
-    {
+    } else {
         dt = pcl_beg_time - time_last_scan;
         time_last_scan = pcl_beg_time;
     }
@@ -236,40 +240,33 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     F_x.block<3, 3>(0, 15) = Eye3d * dt;
     F_x.block<3, 3>(3, 12) = Eye3d * dt;
 
-    cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale * dt * dt;
-    cov_w.block<3, 3>(12, 12).diagonal() = cov_acc_scale * dt * dt;
+    cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale ;
+    cov_w.block<3, 3>(12, 12).diagonal() = cov_acc_scale ;
 
     /** Forward propagation of covariance**/
-    state_inout.cov = F_x * state_inout.cov * F_x.transpose() + cov_w;
+    state_inout.cov = F_x * state_inout.cov * F_x.transpose() + cov_w ;
 
     /** Forward propagation of attitude **/
     state_inout.rot_end = state_inout.rot_end * Exp_f;
 
     /** Position Propagation **/
     state_inout.pos_end += state_inout.vel_end * dt;
+    cout << "==================" << endl;
+    cout << "current vel = " << state_inout.vel_end.transpose() << endl;
+    cout << "current pos = " << state_inout.pos_end.transpose() << endl;
+    cout << "last vel    = " << state_begin.vel_end.transpose() << endl;
+    cout << "last pose   = " << state_begin.pos_end.transpose() << endl;
+    cout << "dt          = " << dt << endl;
+    cout << "==================" << endl;
+
+
 
     /**CV model： un-distort pcl using linear interpolation **/
-    if(lidar_type != L515 && !undistort_iter)
+    if(!undistort_iter)
     {
-        auto it_pcl = pcl_out.points.end() - 1;
-        double dt_j = 0.0;
-        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
-        {
-            dt_j= pcl_end_offset_time - it_pcl->curvature/double(1000);
-            M3D R_jk(Exp(state_inout.bias_g, - dt_j));
-            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
-            // Using rotation and translation to un-distort points
-            V3D p_jk;
-            p_jk = - state_inout.rot_end.transpose() * state_inout.vel_end * dt_j;
-
-            V3D P_compensate =  R_jk * P_j + p_jk;
-
-            /// save Undistorted points and their rotation
-            it_pcl->x = P_compensate(0);
-            it_pcl->y = P_compensate(1);
-            it_pcl->z = P_compensate(2);
-        }
+        undistort_without_imu(state_begin, state_inout, pcl_out);
     }
+
 }
 
 void ImuProcess::undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI::Ptr pcl_out)
@@ -299,12 +296,45 @@ void ImuProcess::undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI:
     }
 }
 
+void ImuProcess::undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end, PointCloudXYZI& pcl_out)
+{
+    if(lidar_type != L515)
+    {
+        Sophus::SE3d T_begin(state_begin.rot_end, state_begin.pos_end);
+        Sophus::SE3d T_end(state_end.rot_end, state_end.pos_end);
 
+        sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);
+        const double &pcl_end_offset_time = pcl_out.points.back().curvature / double(1000);
+        const double &pcl_begin_offset_time = pcl_out.points.front().curvature / double(1000);
+        double dt = pcl_end_offset_time - pcl_begin_offset_time;
+        auto it_pcl = pcl_out.points.end() - 1;
+        double dt_j = 0.0;
+
+        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+        {
+            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+            dt_j= it_pcl->curvature/double(1000) - pcl_begin_offset_time;
+            double scale = dt_j / dt;
+            Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+            Sophus::SE3d T_kj = T_end.inverse() * T_j;
+
+            V3D P_compensate = T_kj * P_j;
+
+            it_pcl->x = P_compensate(0);
+            it_pcl->y = P_compensate(1);
+            it_pcl->z = P_compensate(2);
+        }
+    }
+}
 
 void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &state_inout, PointCloudXYZI &pcl_out)
 {
   /*** add the imu of the last frame-tail to the current frame-head ***/
   pcl_out = *(meas.lidar);
+
+  StatesGroup state_begin = state_inout;
+  cout << "use cv model" << endl;
+
   auto v_imu = meas.imu;
   v_imu.push_front(last_imu_);
   double imu_end_time = v_imu.back()->header.stamp.toSec();
@@ -424,29 +454,33 @@ void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &s
     #endif
     /*** un-distort each lidar point (backward propagation) ***/
     auto it_pcl = pcl_out.points.end() - 1; //a single point in k-th frame
-    for (auto it_kp = IMUpose.end() - 1; it_kp != IMUpose.begin(); it_kp--)
-    {
-        auto head = it_kp - 1;
-        R_imu << MAT_FROM_ARRAY(head->rot);
-        acc_imu << VEC_FROM_ARRAY(head->acc);
-        // cout<<"head imu acc: "<<acc_imu.transpose()<<endl;
-        vel_imu << VEC_FROM_ARRAY(head->vel);
-        pos_imu << VEC_FROM_ARRAY(head->pos);
-        angvel_avr << VEC_FROM_ARRAY(head->gyr);
-        for (; it_pcl->curvature / double(1000) > head->offset_time; it_pcl--) {
-            dt = it_pcl->curvature / double(1000) - head->offset_time; //dt = t_j - t_i > 0
-            /* Transform to the 'scan-end' IMU frame（I_k frame)*/
-            M3D R_i(R_imu * Exp(angvel_avr, dt));
-            V3D P_i = pos_imu + vel_imu * dt + 0.5 * acc_imu * dt * dt;
-            V3D p_in(it_pcl->x, it_pcl->y, it_pcl->z);
-            V3D P_compensate = state_inout.offset_R_L_I.transpose() * (state_inout.rot_end.transpose() * (R_i * (state_inout.offset_R_L_I * p_in + state_inout.offset_T_L_I) + P_i - state_inout.pos_end) - state_inout.offset_T_L_I);
-            /// save Undistorted points
-            it_pcl->x = P_compensate(0);
-            it_pcl->y = P_compensate(1);
-            it_pcl->z = P_compensate(2);
-            if (it_pcl == pcl_out.points.begin()) break;
-        }
-    }
+      double dt_j = 0.0;
+      for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+      {
+          V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+          dt_j= it_pcl->curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
+          dt = pcl_out.points.back().curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
+          Eigen::Quaterniond q_begin(state_begin.rot_end);
+          Eigen::Quaterniond q_end(state_inout.rot_end);
+          Eigen::Quaterniond q_current = q_begin.slerp( (dt_j / dt), q_end);
+
+          Eigen::Vector3d t_begin = state_begin.pos_end;
+          Eigen::Vector3d t_end = state_inout.pos_end;
+          Eigen::Vector3d t_current = t_begin + dt_j * (t_end - t_begin) / dt;
+
+          Eigen::Vector3d pjw = q_current * P_j + t_current;
+
+          Eigen::Vector3d P_compensate;
+          Eigen::Matrix4d T_wk = Eigen::Matrix4d::Identity();
+          T_wk.block<3, 3>(0, 0) = state_inout.rot_end;
+          T_wk.block<3, 1>(0, 3) = state_inout.pos_end;
+
+          P_compensate = T_wk.inverse().block<3, 3>(0, 0).matrix() * pjw + T_wk.inverse().block<3, 1>(0, 3);
+
+          it_pcl->x = P_compensate(0);
+          it_pcl->y = P_compensate(1);
+          it_pcl->z = P_compensate(2);
+      }
   }
 }
 

@@ -21,8 +21,8 @@ initialization:
 mapping:
     filter_size_surf: 0.5
     filter_size_map: 0.5
-    scale_mid: 2
-    scale_big: 3
+    scale_mid: 1
+    scale_big: 1
     gyr_cov: 0.5
     acc_cov: 0.5
     b_acc_cov: 0.0001
@@ -33,7 +33,7 @@ mapping:
     extrinsic_R: [ 1, 0, 0,
                    0, 1, 0,
                    0, 0, 1 ]
-    undistort_iter: true
+    undistort_iter: false
     cov_lidar: 0.001
 
 publish:
