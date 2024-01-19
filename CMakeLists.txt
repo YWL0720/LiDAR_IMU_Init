@@ -5,7 +5,7 @@ SET(CMAKE_BUILD_TYPE "Release")
 
 ADD_COMPILE_OPTIONS(-std=c++14 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
-set( CMAKE_CXX_FLAGS "-std=c++14 -O3" ) 
+set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
 
 add_definitions(-DROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
 
@@ -34,6 +34,9 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" )
 else()
   add_definitions(-DMP_PROC_NUM=1)
 endif()
+
+add_subdirectory(Thirdparty/Sophus)
+add_subdirectory(Thirdparty/tessil-src)
 
 find_package(OpenMP QUIET)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -93,9 +96,10 @@ add_executable(li_init
         include/LI_init/LI_init.cpp
         src/preprocess.cpp)
 
-target_link_libraries(li_init ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${CERES_LIBRARIES})
-target_include_directories(li_init PRIVATE ${PYTHON_INCLUDE_DIRS})
+add_dependencies(li_init ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+target_link_libraries(li_init ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${CERES_LIBRARIES} Sophus::Sophus tsl::robin_map)
+target_include_directories(li_init PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 
 

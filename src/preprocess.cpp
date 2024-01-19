@@ -31,6 +31,10 @@ Preprocess::Preprocess()
     jump_down_limit = cos(jump_down_limit / 180 * M_PI);
     cos160 = cos(cos160 / 180 * M_PI);
     smallp_intersect = cos(smallp_intersect / 180 * M_PI);
+
+    log_pre.open("/home/ywl/i2lo_log_pre.txt", std::ios::out);
+    log_pre.precision(9);
+    log_pre.setf(std::ios::fixed);
 }
 
 Preprocess::~Preprocess() {}
@@ -46,6 +50,21 @@ void Preprocess::process(const livox_ros_driver::CustomMsg::ConstPtr &msg, Point
     avia_handler(msg);
     *pcl_out = pl_surf;
 }
+
+/*!
+ * @brief livox适配Point3D的处理函数
+ * @param msg
+ * @param pcl_out
+ * @param points_out
+ */
+void Preprocess::process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out, std::vector<Point3D>& points_out)
+{
+    avia_handler(msg);
+    points_out = pt_surf;
+    *pcl_out = pl_surf;
+}
+
+
 
 void Preprocess::process_cut_frame_livox(const livox_ros_driver::CustomMsg::ConstPtr &msg,
                                          deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar,
@@ -356,6 +375,9 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
+
+    pt_surf.clear();
+
     double t1 = omp_get_wtime();
     int plsize = msg->point_num;
 
@@ -363,13 +385,18 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
     pl_surf.reserve(plsize);
     pl_full.resize(plsize);
 
-    for (int i = 0; i < N_SCANS; i++) {
+    /// TODO 这里先直接pushback吧 后续可以改一下 先分配个内存
+
+    for (int i = 0; i < N_SCANS; i++)
+    {
         pl_buff[i].clear();
         pl_buff[i].reserve(plsize);
     }
     uint valid_num = 0;
 
-    if (feature_enabled) {
+    /// TODO 提取特征的部分后续再改 默认不提特征
+    if (feature_enabled)
+    {
         for (uint i = 1; i < plsize; i++) {
             if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10) ||
                 ((msg->points[i].tag & 0x30) == 0x00)) {
@@ -415,12 +442,17 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
         }
         time += omp_get_wtime() - t0;
         printf("Feature extraction time: %lf \n", time / count);
-    } else {
-        for (uint i = 1; i < plsize; i++) {
+    }
+    else
+    {
+        for (uint i = 1; i < plsize; i++)
+        {
             if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10 ||
-                (msg->points[i].tag & 0x30) == 0x00)) {
+                (msg->points[i].tag & 0x30) == 0x00))
+            {
                 valid_num++;
-                if (valid_num % point_filter_num == 0) {
+                if (valid_num % point_filter_num == 0)
+                {
                     pl_full[i].x = msg->points[i].x;
                     pl_full[i].y = msg->points[i].y;
                     pl_full[i].z = msg->points[i].z;
@@ -433,8 +465,16 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
 
                     if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7)
                         || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7)
-                        || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7)) {
+                        || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
+                    {
                         pl_surf.push_back(pl_full[i]);
+
+                        Point3D point;
+                        point.raw_point = pl_full[i].getVector3fMap().cast<double>();
+                        point.relative_time = pl_full[i].curvature;
+                        point.intensity = pl_full[i].intensity;
+                        pt_surf.push_back(point);
+//                        log_pre << "point.relative_time = " << point.relative_time << " and " << point.relative_time / double(1000) << "s" << endl;
                     }
                 }
             }

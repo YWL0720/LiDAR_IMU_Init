@@ -124,6 +124,7 @@ class Preprocess
   ~Preprocess();
   
   void process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  void process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out, std::vector<Point3D>& points_out);
   void process_cut_frame_livox(const livox_ros_driver::CustomMsg::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, const int required_frame_num, int scan_count);
   void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, const int required_frame_num, int scan_count);
@@ -131,13 +132,14 @@ class Preprocess
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
+  std::vector<Point3D> pt_surf;
   PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
   vector<orgtype> typess[128]; //maximum 128 line lidar
   int lidar_type, point_filter_num, N_SCANS;;
   double blind;
   bool feature_enabled, given_offset_time;
   ros::Publisher pub_full, pub_surf, pub_corn;
-    
+  fstream log_pre;
 
   private:
   void avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg);

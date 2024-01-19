@@ -52,6 +52,8 @@ class ImuProcess
   void set_gyr_bias_cov(const V3D &b_g);
   void set_acc_bias_cov(const V3D &b_a);
   void Process(const MeasureGroup &meas, StatesGroup &state, PointCloudXYZI::Ptr pcl_un_);
+  /// 去畸变
+  void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI &pcl_out);
 
 
 //  ros::NodeHandle nh;
@@ -69,6 +71,8 @@ class ImuProcess
   bool   imu_en;
   bool LI_init_done = false;
   double IMU_mean_acc_norm;
+  double frame_dt = 0.0;
+  double frame_end_time = 0.0;
 
  private:
   void IMU_init(const MeasureGroup &meas, StatesGroup &state, int &N);
@@ -200,7 +204,12 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, StatesGroup &state_inout, in
 }
 
 
-
+/*!
+ * @brief 无IMU的前向传播 当前已经不在此处去畸变
+ * @param meas
+ * @param state_inout
+ * @param pcl_out
+ */
 void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, StatesGroup &state_inout,
                              PointCloudXYZI &pcl_out) {
     pcl_out = *(meas.lidar);
@@ -212,14 +221,23 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     MD(DIM_STATE, DIM_STATE) F_x, cov_w;
     double dt = 0.0;
 
-    if (b_first_frame_) {
+    if (b_first_frame_)
+    {
         dt = 0.1;
         b_first_frame_ = false;
-    } else {
+        frame_dt = pcl_out.points.back().curvature / double(1000) - pcl_out.points.front().curvature / double(1000);
+        frame_end_time = pcl_out.points.back().curvature;
+    }
+    else
+    {
         dt = pcl_beg_time - time_last_scan;
         time_last_scan = pcl_beg_time;
+        frame_dt = pcl_out.points.back().curvature / double(1000) - pcl_out.points.front().curvature / double(1000);
+        frame_end_time = pcl_out.points.back().curvature;
+
     }
 
+    ///  前向传播更改为SE3传播
     /* covariance propagation */
     F_x.setIdentity();
     cov_w.setZero();
@@ -228,7 +246,7 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     M3D Exp_f = Exp(state_inout.bias_g, dt);
     F_x.block<3, 3>(0, 0) = Exp(state_inout.bias_g, -dt);
     F_x.block<3, 3>(0, 15) = Eye3d * dt;
-    F_x.block<3, 3>(3, 12) = Eye3d * dt;
+    F_x.block<3, 3>(3, 12) = state_inout.rot_end * dt;
 
 
     cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale * dt * dt;
@@ -237,33 +255,35 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     /** Forward propagation of covariance**/
     state_inout.cov = F_x * state_inout.cov * F_x.transpose() + cov_w;
 
+    /** Position Propagation **/
+    state_inout.pos_end += state_inout.rot_end * state_inout.vel_end * dt;
+
     /** Forward propagation of attitude **/
     state_inout.rot_end = state_inout.rot_end * Exp_f;
 
-    /** Position Propagation **/
-    state_inout.pos_end += state_inout.vel_end * dt;
 
-    /**CV model： un-distort pcl using linear interpolation **/
-    if(lidar_type != L515){
-        auto it_pcl = pcl_out.points.end() - 1;
-        double dt_j = 0.0;
-        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
-        {
-            dt_j= pcl_end_offset_time - it_pcl->curvature/double(1000);
-            M3D R_jk(Exp(state_inout.bias_g, - dt_j));
-            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
-            // Using rotation and translation to un-distort points
-            V3D p_jk;
-            p_jk = - state_inout.rot_end.transpose() * state_inout.vel_end * dt_j;
 
-            V3D P_compensate =  R_jk * P_j + p_jk;
-
-            /// save Undistorted points and their rotation
-            it_pcl->x = P_compensate(0);
-            it_pcl->y = P_compensate(1);
-            it_pcl->z = P_compensate(2);
-        }
-    }
+//    /**CV model： un-distort pcl using linear interpolation **/
+//    if(lidar_type != L515){
+//        auto it_pcl = pcl_out.points.end() - 1;
+//        double dt_j = 0.0;
+//        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+//        {
+//            dt_j= pcl_end_offset_time - it_pcl->curvature/double(1000);
+//            M3D R_jk(Exp(state_inout.bias_g, - dt_j));
+//            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+//            // Using rotation and translation to un-distort points
+//            V3D p_jk;
+//            p_jk = - state_inout.rot_end.transpose() * state_inout.vel_end * dt_j;
+//
+//            V3D P_compensate =  R_jk * P_j + p_jk;
+//
+//            /// save Undistorted points and their rotation
+//            it_pcl->x = P_compensate(0);
+//            it_pcl->y = P_compensate(1);
+//            it_pcl->z = P_compensate(2);
+//        }
+//    }
 }
 
 void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &state_inout, PointCloudXYZI &pcl_out)

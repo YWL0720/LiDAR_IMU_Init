@@ -14,6 +14,13 @@
 #include <color.h>
 #include <scope_timer.hpp>
 
+#include <tr1/unordered_map>
+// robin map
+#include "tsl/robin_map.h"
+
+#include "sophus/se3.hpp"
+#include "sophus/interpolate.hpp"
+
 using namespace std;
 using namespace Eigen;
 
@@ -53,17 +60,8 @@ const V3D Zero3d(0, 0, 0);
 // Vector3d Lidar_offset_to_IMU(0.04165, 0.02326, -0.0284); // Avia
 
 enum LID_TYPE{AVIA = 1, VELO, OUSTER, L515, PANDAR, ROBOSENSE}; //{1, 2, 3}
-struct MeasureGroup     // Lidar data and imu dates for the curent process
-{
-    MeasureGroup()
-    {
-        lidar_beg_time = 0.0;
-        this->lidar.reset(new PointCloudXYZI());
-    };
-    double lidar_beg_time;
-    PointCloudXYZI::Ptr lidar;
-    deque<sensor_msgs::Imu::ConstPtr> imu;
-};
+
+enum POINT_TYPE{RAW = 1, UNDISTORT, WORLD};
 
 struct StatesGroup
 {
@@ -266,6 +264,106 @@ bool esti_plane(Matrix<T, 4, 1> &pca_result, const PointVector &point, const T &
     }
 
     return true;
+}
+
+/*!
+ * @brief 雷达点结构
+ */
+struct Point3D
+{
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Eigen::Vector3d raw_point;                // 未去畸变的点
+    Eigen::Vector3d undistort_lidar_point;    // 去畸变后的点 雷达坐标系下
+    Eigen::Vector3d world_point;              // 去畸变后世界坐标系下的点
+    float relative_time = 0.0;               // 驱动给的相对时间 ms
+    double scale = 1.0;                       // 插值比例
+    double intensity = 0.0;                   // 强度
+    Point3D() = default;
+};
+
+struct MeasureGroup     // Lidar data and imu dates for the curent process
+{
+    MeasureGroup()
+    {
+        lidar_beg_time = 0.0;
+        this->lidar.reset(new PointCloudXYZI());
+    };
+    double lidar_beg_time;
+    PointCloudXYZI::Ptr lidar;
+    deque<sensor_msgs::Imu::ConstPtr> imu;
+    std::vector<Point3D> points;
+};
+
+/*!
+ * @brief 体素索引结构
+ */
+struct voxel
+{
+
+    voxel() = default;
+
+    voxel(short x, short y, short z) : x(x), y(y), z(z) {}
+
+    bool operator==(const voxel &vox) const { return x == vox.x && y == vox.y && z == vox.z; }
+
+    inline bool operator<(const voxel &vox) const
+    {
+        return x < vox.x || (x == vox.x && y < vox.y) || (x == vox.x && y == vox.y && z < vox.z);
+    }
+
+    inline static voxel coordinates(const Eigen::Vector3d &point, double voxel_size)
+    {
+        return {short(point.x() / voxel_size),
+                short(point.y() / voxel_size),
+                short(point.z() / voxel_size)};
+    }
+
+    short x;
+    short y;
+    short z;
+};
+
+/*!
+ * @brief 体素结构
+ */
+struct voxelBlock
+{
+
+    explicit voxelBlock(int num_points_ = 20) : num_points(num_points_) { points.reserve(num_points_); }
+
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> points;
+
+    bool IsFull() const { return num_points == points.size(); }
+
+    void AddPoint(const Eigen::Vector3d &point) {
+        assert(num_points > points.size());
+        points.push_back(point);
+    }
+
+    inline int NumPoints() const { return points.size(); }
+
+    inline int Capacity() { return num_points; }
+
+private:
+    int num_points;
+};
+
+typedef tsl::robin_map<voxel, voxelBlock> voxelHashMap;
+
+// 哈希函数
+namespace std
+{
+
+    template<> struct hash<voxel>
+    {
+        std::size_t operator()(const voxel &vox) const
+        {
+            const size_t kP1 = 73856093;
+            const size_t kP2 = 19349669;
+            const size_t kP3 = 83492791;
+            return vox.x * kP1 + vox.y * kP2 + vox.z * kP3;
+        }
+    };
 }
 
 #endif
