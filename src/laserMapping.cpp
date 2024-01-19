@@ -660,8 +660,8 @@ void iterCurrentPoint3D(Point3D& current_point)
     // T_wj = inter(T_wb, T_we)   T_ej = T_ew * T_wj   P_e = T_ej * P_j  P_w = T_wj * P_j
     Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
     Sophus::SE3d T_ej = T_end.inverse() * T_j;
-    current_point.undistort_lidar_point = T_ej * current_point.raw_point;
-    current_point.world_point = T_j * current_point.raw_point;
+//    current_point.undistort_lidar_point = T_ej * current_point.raw_point;
+//    current_point.world_point = T_j * current_point.raw_point;
 }
 
 /*!
@@ -673,10 +673,12 @@ void iterCurrentPoint3D(Point3D& current_point, bool current_converge, int iter_
 {
     Sophus::SE3d T_begin(last_state.rot_end, last_state.pos_end);
     Sophus::SE3d T_end(state.rot_end, state.pos_end);
-    /// 迭代收敛了才去畸变
-    if (iter_num != 0 && !current_converge)
+
+    /// 如果是理想的情况 那么此处的条件是 if (!current_converge && iter_num != 0)
+    /// 也就是第一次迭代时需要去畸变 此后 每收敛一次 去一次畸变
+    if (iter_num != 0 && iter_num != 15)
     {
-        current_point.world_point = T_end * current_point.raw_point;
+        current_point.world_point = T_end * current_point.undistort_lidar_point;
     }
     else
     {
@@ -1385,14 +1387,6 @@ int main(int argc, char **argv) {
 
                 if (EKF_stop_flg) break;
             }
-
-            log_time = true;
-            /// 用最终的估计结果 更新当前帧点的坐标
-            for (int i = 0; i < feats_points_size; i++)
-            {
-                iterCurrentPoint3D(feats_points[i]);
-            }
-            f << " ========================== " << endl;
 
             *feats_down_body = point3DtoPCL(feats_points, UNDISTORT);
 
