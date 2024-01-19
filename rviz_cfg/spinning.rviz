@@ -8,6 +8,7 @@ Panels:
         - /mapping1/surround1
         - /mapping1/currPoints1/Autocompute Value Bounds1
         - /Odometry1/Odometry1/Shape1
+        - /Path2
       Splitter Ratio: 0.6432291865348816
     Tree Height: 1252
   - Class: rviz/Selection
@@ -68,8 +69,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 1.8751956224441528
-            Min Value: -13.819902420043945
+            Max Value: 23.552703857421875
+            Min Value: -2.9654557704925537
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -299,6 +300,30 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.05000000074505806
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /path_pre
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -327,7 +352,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 44.58439636230469
+      Distance: 55.77537536621094
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -335,17 +360,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -1.4191250801086426
-        Y: -2.365497589111328
-        Z: -4.6487666622851975e-06
+        X: 51.98986053466797
+        Y: 20.15100860595703
+        Z: -1.3950971151643898e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3402034640312195
+      Pitch: 1.0952030420303345
       Target Frame: camera_init
-      Yaw: 2.0181381702423096
+      Yaw: 1.4781386852264404
     Saved: ~
 Window Geometry:
   Displays:

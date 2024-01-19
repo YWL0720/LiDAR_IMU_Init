@@ -1,10 +1,10 @@
 common:
-    lid_topic:  "/os1_cloud_node1/points"
+    lid_topic:  "/os_cloud_node/points"
     imu_topic:  "/mavros/imu/data_raw"
 
 preprocess:
     lidar_type: 3                # Ouster LiDAR
-    scan_line: 16
+    scan_line: 128
     blind: 4
     feature_extract_en: false
 
@@ -33,7 +33,7 @@ mapping:
                        0, 1, 0,
                        0, 0, 1 ]
     undistort_iter: false
-    cov_lidar: 0.00001
+    cov_lidar: 0.0001
 
 publish:
     path_en:  true

@@ -56,6 +56,11 @@ class ImuProcess
   void Process(const MeasureGroup &meas, StatesGroup &state, PointCloudXYZI::Ptr pcl_un_);
   void undistort_without_imu(StatesGroup &state_inout, PointCloudXYZI::Ptr pcl_out);
   void undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end, PointCloudXYZI& pcl_out);
+  void undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end, PointCloudXYZI& pcl_in, PointCloudXYZI& pcl_out);
+
+
+  void undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end_old, StatesGroup &state_end_new, PointCloudXYZI& pcl_out);
+
   Eigen::Matrix4d delta_T = Eigen::Matrix4d::Identity();
   Eigen::Matrix3d delta_R = Eigen::Matrix3d::Identity();
   Eigen::Vector3d delta_t = Eigen::Vector3d::Zero();
@@ -77,6 +82,7 @@ class ImuProcess
   bool   undistort_iter;
   bool LI_init_done = false;
   double IMU_mean_acc_norm;
+  StatesGroup state_begin_;
 
  private:
   void IMU_init(const MeasureGroup &meas, StatesGroup &state, int &N);
@@ -213,7 +219,7 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, StatesGroup &state_inout, in
 void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, StatesGroup &state_inout,
                              PointCloudXYZI &pcl_out) {
     pcl_out = *(meas.lidar);
-    StatesGroup state_begin = state_inout;
+    state_begin_ = state_inout;
     /*** sort point clouds by offset time ***/
     const double &pcl_beg_time = meas.lidar_beg_time;
     sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);
@@ -238,33 +244,33 @@ void ImuProcess::Forward_propagation_without_imu(const MeasureGroup &meas, State
     M3D Exp_f = Exp(state_inout.bias_g, dt);
     F_x.block<3, 3>(0, 0) = Exp(state_inout.bias_g, -dt);
     F_x.block<3, 3>(0, 15) = Eye3d * dt;
-    F_x.block<3, 3>(3, 12) = Eye3d * dt;
+    F_x.block<3, 3>(3, 12) = state_inout.rot_end  * dt;
 
-    cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale ;
-    cov_w.block<3, 3>(12, 12).diagonal() = cov_acc_scale ;
+    cov_w.block<3, 3>(15, 15).diagonal() = cov_gyr_scale * dt * dt;
+    cov_w.block<3, 3>(12, 12).diagonal() = cov_acc_scale * dt * dt;
 
     /** Forward propagation of covariance**/
     state_inout.cov = F_x * state_inout.cov * F_x.transpose() + cov_w ;
 
+    /** Position Propagation **/
+    state_inout.pos_end += state_inout.rot_end * state_inout.vel_end * dt;
+
     /** Forward propagation of attitude **/
     state_inout.rot_end = state_inout.rot_end * Exp_f;
 
-    /** Position Propagation **/
-    state_inout.pos_end += state_inout.vel_end * dt;
-    cout << "==================" << endl;
-    cout << "current vel = " << state_inout.vel_end.transpose() << endl;
-    cout << "current pos = " << state_inout.pos_end.transpose() << endl;
-    cout << "last vel    = " << state_begin.vel_end.transpose() << endl;
-    cout << "last pose   = " << state_begin.pos_end.transpose() << endl;
-    cout << "dt          = " << dt << endl;
-    cout << "==================" << endl;
 
-
+//    cout << "==================" << endl;
+//    cout << "current vel = " << state_inout.vel_end.transpose() << endl;
+//    cout << "current pos = " << state_inout.pos_end.transpose() << endl;
+//    cout << "last vel    = " << state_begin_.vel_end.transpose() << endl;
+//    cout << "last pose   = " << state_begin_.pos_end.transpose() << endl;
+//    cout << "dt          = " << dt << endl;
+//    cout << "==================" << endl;
 
     /**CV model： un-distort pcl using linear interpolation **/
     if(!undistort_iter)
     {
-        undistort_without_imu(state_begin, state_inout, pcl_out);
+        undistort_without_imu(state_begin_, state_inout, pcl_out);
     }
 
 }
@@ -315,10 +321,87 @@ void ImuProcess::undistort_without_imu(StatesGroup & state_begin, StatesGroup &s
             V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
             dt_j= it_pcl->curvature/double(1000) - pcl_begin_offset_time;
             double scale = dt_j / dt;
+
             Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
             Sophus::SE3d T_kj = T_end.inverse() * T_j;
 
             V3D P_compensate = T_kj * P_j;
+
+            it_pcl->x = P_compensate(0);
+            it_pcl->y = P_compensate(1);
+            it_pcl->z = P_compensate(2);
+        }
+        cout << endl;
+    }
+}
+
+void ImuProcess::undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end, PointCloudXYZI& pcl_in, PointCloudXYZI& pcl_out)
+{
+    if(lidar_type != L515)
+    {
+        Sophus::SE3d T_begin(state_begin.rot_end, state_begin.pos_end);
+        Sophus::SE3d T_end(state_end.rot_end, state_end.pos_end);
+
+        sort(pcl_in.points.begin(), pcl_in.points.end(), time_list);
+        const double &pcl_end_offset_time = pcl_in.points.back().curvature / double(1000);
+        const double &pcl_begin_offset_time = pcl_in.points.front().curvature / double(1000);
+        double dt = pcl_end_offset_time - pcl_begin_offset_time;
+        auto it_pcl = pcl_in.points.end() - 1;
+        double dt_j = 0.0;
+
+        pcl_out.clear();
+
+        for(; it_pcl != pcl_in.points.begin(); it_pcl --)
+        {
+            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+            dt_j= it_pcl->curvature/double(1000) - pcl_begin_offset_time;
+            double scale = dt_j / dt;
+
+            Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+
+            Sophus::SE3d T_kj = T_end.inverse() * T_j;
+
+            V3D P_compensate = T_kj * P_j;
+
+            PointType point = *it_pcl;
+            point.x = P_compensate.x();
+            point.y = P_compensate.y();
+            point.z = P_compensate.z();
+            pcl_out.push_back(point);
+        }
+    }
+}
+
+void ImuProcess::undistort_without_imu(StatesGroup & state_begin, StatesGroup &state_end_old, StatesGroup &state_end_new, PointCloudXYZI& pcl_out)
+{
+    if(lidar_type != L515)
+    {
+        Sophus::SE3d T_begin(state_begin.rot_end, state_begin.pos_end);
+        Sophus::SE3d T_end_old(state_end_old.rot_end, state_end_old.pos_end);
+        Sophus::SE3d T_end(state_end_new.rot_end, state_end_new.pos_end);
+
+        sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);
+        const double &pcl_end_offset_time = pcl_out.points.back().curvature / double(1000);
+        const double &pcl_begin_offset_time = pcl_out.points.front().curvature / double(1000);
+        double dt = pcl_end_offset_time - pcl_begin_offset_time;
+        auto it_pcl = pcl_out.points.end() - 1;
+        double dt_j = 0.0;
+
+        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+        {
+            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+            dt_j= it_pcl->curvature/double(1000) - pcl_begin_offset_time;
+            double scale = dt_j / dt;
+
+            Sophus::SE3d T_j_old = Sophus::interpolate(T_begin, T_end_old, scale);
+            Sophus::SE3d T_kj_old = T_end_old.inverse() * T_j_old;
+
+            V3D P_j_origin = T_kj_old.inverse() * P_j;
+
+            Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+            Sophus::SE3d T_kj = T_end.inverse() * T_j;
+
+            V3D P_compensate = T_kj * P_j_origin;
 
             it_pcl->x = P_compensate(0);
             it_pcl->y = P_compensate(1);
@@ -331,8 +414,8 @@ void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &s
 {
   /*** add the imu of the last frame-tail to the current frame-head ***/
   pcl_out = *(meas.lidar);
+  state_begin_ = state_inout;
 
-  StatesGroup state_begin = state_inout;
   cout << "use cv model" << endl;
 
   auto v_imu = meas.imu;
@@ -446,42 +529,75 @@ void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &s
   last_imu_ = meas.imu.back();
   last_lidar_end_time_ = pcl_end_time;
 
-  if (lidar_type != L515)
-  {
-    #ifdef DEBUG_PRINT
-      cout<<"[ IMU Process ]: vel "<<state_inout.vel_end.transpose()<<" pos "<<state_inout.pos_end.transpose()<<" ba"<<state_inout.bias_a.transpose()<<" bg "<<state_inout.bias_g.transpose()<<endl;
-      cout<<"propagated cov: "<<state_inout.cov.diagonal().transpose()<<endl;
-    #endif
-    /*** un-distort each lidar point (backward propagation) ***/
-    auto it_pcl = pcl_out.points.end() - 1; //a single point in k-th frame
-      double dt_j = 0.0;
-      for(; it_pcl != pcl_out.points.begin(); it_pcl --)
-      {
-          V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
-          dt_j= it_pcl->curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
-          dt = pcl_out.points.back().curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
-          Eigen::Quaterniond q_begin(state_begin.rot_end);
-          Eigen::Quaterniond q_end(state_inout.rot_end);
-          Eigen::Quaterniond q_current = q_begin.slerp( (dt_j / dt), q_end);
+//  if (lidar_type != L515)
+//  {
+//    #ifdef DEBUG_PRINT
+//      cout<<"[ IMU Process ]: vel "<<state_inout.vel_end.transpose()<<" pos "<<state_inout.pos_end.transpose()<<" ba"<<state_inout.bias_a.transpose()<<" bg "<<state_inout.bias_g.transpose()<<endl;
+//      cout<<"propagated cov: "<<state_inout.cov.diagonal().transpose()<<endl;
+//    #endif
+//    /*** un-distort each lidar point (backward propagation) ***/
+//    auto it_pcl = pcl_out.points.end() - 1; //a single point in k-th frame
+//      double dt_j = 0.0;
+//      for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+//      {
+//          V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+//          dt_j= it_pcl->curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
+//          dt = pcl_out.points.back().curvature/double(1000) - pcl_out.points.begin()->curvature/double(1000);
+//          Eigen::Quaterniond q_begin(state_begin.rot_end);
+//          Eigen::Quaterniond q_end(state_inout.rot_end);
+//          Eigen::Quaterniond q_current = q_begin.slerp( (dt_j / dt), q_end);
+//
+//          Eigen::Vector3d t_begin = state_begin.pos_end;
+//          Eigen::Vector3d t_end = state_inout.pos_end;
+//          Eigen::Vector3d t_current = t_begin + dt_j * (t_end - t_begin) / dt;
+//
+//          Eigen::Vector3d pjw = q_current * P_j + t_current;
+//
+//          Eigen::Vector3d P_compensate;
+//          Eigen::Matrix4d T_wk = Eigen::Matrix4d::Identity();
+//          T_wk.block<3, 3>(0, 0) = state_inout.rot_end;
+//          T_wk.block<3, 1>(0, 3) = state_inout.pos_end;
+//
+//          P_compensate = T_wk.inverse().block<3, 3>(0, 0).matrix() * pjw + T_wk.inverse().block<3, 1>(0, 3);
+//
+//          it_pcl->x = P_compensate(0);
+//          it_pcl->y = P_compensate(1);
+//          it_pcl->z = P_compensate(2);
+//      }
+//  }
 
-          Eigen::Vector3d t_begin = state_begin.pos_end;
-          Eigen::Vector3d t_end = state_inout.pos_end;
-          Eigen::Vector3d t_current = t_begin + dt_j * (t_end - t_begin) / dt;
 
-          Eigen::Vector3d pjw = q_current * P_j + t_current;
+    if(lidar_type != L515)
+    {
+        cout << "use cv model" << endl;
+        Sophus::SE3d T_begin(state_begin_.rot_end, state_begin_.pos_end);
+        Sophus::SE3d T_end(state_inout.rot_end, state_inout.pos_end);
 
-          Eigen::Vector3d P_compensate;
-          Eigen::Matrix4d T_wk = Eigen::Matrix4d::Identity();
-          T_wk.block<3, 3>(0, 0) = state_inout.rot_end;
-          T_wk.block<3, 1>(0, 3) = state_inout.pos_end;
+        sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);
+        const double &pcl_end_offset_time = pcl_out.points.back().curvature / double(1000);
+        const double &pcl_begin_offset_time = pcl_out.points.front().curvature / double(1000);
+        double dt = pcl_end_offset_time - pcl_begin_offset_time;
+        auto it_pcl = pcl_out.points.end() - 1;
+        double dt_j = 0.0;
 
-          P_compensate = T_wk.inverse().block<3, 3>(0, 0).matrix() * pjw + T_wk.inverse().block<3, 1>(0, 3);
+        for(; it_pcl != pcl_out.points.begin(); it_pcl --)
+        {
+            V3D P_j(it_pcl->x, it_pcl->y, it_pcl->z);
+            dt_j= it_pcl->curvature/double(1000) - pcl_begin_offset_time;
+            double scale = dt_j / dt;
 
-          it_pcl->x = P_compensate(0);
-          it_pcl->y = P_compensate(1);
-          it_pcl->z = P_compensate(2);
-      }
-  }
+            Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+            Sophus::SE3d T_kj = T_end.inverse() * T_j;
+
+            V3D P_compensate = T_kj.rotationMatrix() * P_j + T_kj.translation();
+//            V3D P_compensate =  P_j + T_kj.translation();
+
+            it_pcl->x = P_compensate(0);
+            it_pcl->y = P_compensate(1);
+            it_pcl->z = P_compensate(2);
+        }
+        cout << endl;
+    }
 }
 
 
