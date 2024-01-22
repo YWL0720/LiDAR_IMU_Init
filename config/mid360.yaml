@@ -9,7 +9,7 @@ preprocess:
     blind: 1
 
 initialization:
-    cut_frame: true
+    cut_frame: false
     cut_frame_num: 5           # must be positive integer
     orig_odom_freq: 10           # original Lidar frequency
     mean_acc_norm: 9.805         # 1 for livox built-in IMU

@@ -1438,13 +1438,19 @@ int main(int argc, char **argv) {
                     nearest_search_en = true;
                     rematch_num++;
 
-                    /// 全局收敛判断
+                    /// 全局收敛判断 两次匹配的收敛状态相差小于阈值 重新进行去畸变
                     auto delta_state = state - last_converge_state;
 
-                    if (((delta_state.block<3, 1>(0, 0).norm() * 57.3 < 1) && (delta_state.block<3, 1>(3, 0).norm() * 100 < 1.0)) || current_iter_count >= 15)
+                    if (((delta_state.block<3, 1>(0, 0).norm() * 57.3 < 1) && (delta_state.block<3, 1>(3, 0).norm() * 100 < 1.0) && iterCount >= 4)
+                            || current_iter_count >= 15)
                     {
                         current_converge = true;
                         current_iter_count = 0;
+
+                        if (distort_time >= 3)
+                        {
+                            EKF_stop_flg = true;
+                        }
                     }
                     last_converge_state = state;
                 }
@@ -1452,7 +1458,7 @@ int main(int argc, char **argv) {
 
                 /*** Convergence Judgements and Covariance Update ***/
                 /// 不限制匹配次数
-                if (EKF_stop_flg || ((iterCount == NUM_MAX_ITERATIONS - 1)))
+                if (EKF_stop_flg || ((iterCount == NUM_MAX_ITERATIONS - 1)) )
                 {
                     if (flg_EKF_inited)
                     {
