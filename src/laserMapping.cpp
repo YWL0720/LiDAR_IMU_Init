@@ -83,6 +83,8 @@ double cube_len = 0, total_distance = 0, lidar_end_time = 0, first_lidar_time = 
 // Time Log Variables
 int kdtree_size_st = 0, kdtree_size_end = 0, add_point_size = 0;
 
+fstream time_log;
+int distort_time = 0;
 
 int lidar_type, pcd_save_interval = -1, pcd_index = 0;
 bool lidar_pushed, flg_reset, flg_exit = false, flg_EKF_inited = true;
@@ -349,22 +351,25 @@ void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg)
     {
         deque<PointCloudXYZI::Ptr> ptr;
         deque<double> timestamp_lidar;
-        p_pre->process_cut_frame_livox(msg, ptr, timestamp_lidar, cut_frame_num, scan_count);
+        deque<std::vector<Point3D>> points_lidar;
 
-        while (!ptr.empty() && !timestamp_lidar.empty()) {
+        p_pre->process_cut_frame_livox(msg, ptr, timestamp_lidar, points_lidar, cut_frame_num, scan_count);
+
+        while (!ptr.empty() && !timestamp_lidar.empty() && !points_lidar.empty())
+        {
             lidar_buffer.push_back(ptr.front());
             ptr.pop_front();
             time_buffer.push_back(timestamp_lidar.front() / double(1000));//unit:s
             timestamp_lidar.pop_front();
+            lidar_points_buffer.push_back(points_lidar.front());
+            points_lidar.pop_front();
         }
     }
     else
     {
         PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
         std::vector<Point3D> points;
-
         p_pre->process(msg, ptr, points);
-
         lidar_buffer.push_back(ptr);
         time_buffer.push_back(last_timestamp_lidar);
         lidar_points_buffer.push_back(points);
@@ -373,7 +378,8 @@ void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg)
     sig_buffer.notify_all();
 }
 
-void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
     mtx_buffer.lock();
     scan_count++;
     if (msg->header.stamp.toSec() < last_timestamp_lidar) {
@@ -389,21 +395,29 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg) {
         printf("Self sync IMU and LiDAR, HARD time lag is %.10lf \n \n", timediff_imu_wrt_lidar);
     }
 
-    if ((lidar_type == VELO || lidar_type == OUSTER || lidar_type == PANDAR || lidar_type == ROBOSENSE) && cut_frame) {
+    if ((lidar_type == VELO || lidar_type == OUSTER || lidar_type == PANDAR || lidar_type == ROBOSENSE) && cut_frame)
+    {
         deque<PointCloudXYZI::Ptr> ptr;
         deque<double> timestamp_lidar;
         p_pre->process_cut_frame_pcl2(msg, ptr, timestamp_lidar, cut_frame_num, scan_count);
-        while (!ptr.empty() && !timestamp_lidar.empty()) {
+        while (!ptr.empty() && !timestamp_lidar.empty())
+        {
             lidar_buffer.push_back(ptr.front());
             ptr.pop_front();
             time_buffer.push_back(timestamp_lidar.front() / double(1000));//unit:s
             timestamp_lidar.pop_front();
         }
-    } else {
+    }
+    else
+    {
         PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
-        p_pre->process(msg, ptr);
+        std::vector<Point3D> points;
+
+        p_pre->process(msg, ptr, points);
         lidar_buffer.push_back(ptr);
         time_buffer.push_back(msg->header.stamp.toSec());
+        lidar_points_buffer.push_back(points);
+
     }
     mtx_buffer.unlock();
     sig_buffer.notify_all();
@@ -654,12 +668,12 @@ void iterCurrentPoint3D(Point3D& current_point)
     double offset_time = current_dt - (current_end_time - current_point.relative_time) / 1000.0;
     double scale = offset_time / current_dt;
     scale = scale >= 1 ? 1 : scale <= 0 ? 0 : scale;
-    if (log_time)
-        f << "offset_time = " << offset_time << " current_dt = " << current_dt << " " << "current_end_time = "  << current_end_time << " relative_time = " <<  current_point.relative_time << " scale = " << scale << endl;
+//    if (log_time)
+//        f << "offset_time = " << offset_time << " current_dt = " << current_dt << " " << "current_end_time = "  << current_end_time << " relative_time = " <<  current_point.relative_time << " scale = " << scale << endl;
 
-    // T_wj = inter(T_wb, T_we)   T_ej = T_ew * T_wj   P_e = T_ej * P_j  P_w = T_wj * P_j
-    Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
-    Sophus::SE3d T_ej = T_end.inverse() * T_j;
+//     T_wj = inter(T_wb, T_we)   T_ej = T_ew * T_wj   P_e = T_ej * P_j  P_w = T_wj * P_j
+//    Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+//    Sophus::SE3d T_ej = T_end.inverse() * T_wj;
 //    current_point.undistort_lidar_point = T_ej * current_point.raw_point;
 //    current_point.world_point = T_j * current_point.raw_point;
 }
@@ -669,18 +683,12 @@ void iterCurrentPoint3D(Point3D& current_point)
  * @param current_point
  * @param current_converge
  */
-void iterCurrentPoint3D(Point3D& current_point, bool current_converge, int iter_num)
+void iterCurrentPoint3D(Point3D& current_point, int iter_num)
 {
     Sophus::SE3d T_begin(last_state.rot_end, last_state.pos_end);
     Sophus::SE3d T_end(state.rot_end, state.pos_end);
 
-    /// 如果是理想的情况 那么此处的条件是 if (!current_converge && iter_num != 0)
-    /// 也就是第一次迭代时需要去畸变 此后 每收敛一次 去一次畸变
-    if (iter_num != 0 && iter_num != 15)
-    {
-        current_point.world_point = T_end * current_point.undistort_lidar_point;
-    }
-    else
+    if (iter_num == 0  || iter_num == 18  )
     {
         double offset_time = current_dt - (current_end_time - current_point.relative_time) / 1000.0;
         double scale = offset_time / current_dt;
@@ -690,6 +698,40 @@ void iterCurrentPoint3D(Point3D& current_point, bool current_converge, int iter_
         Sophus::SE3d T_ej = T_end.inverse() * T_j;
         current_point.undistort_lidar_point = T_ej * current_point.raw_point;
         current_point.world_point = T_j * current_point.raw_point;
+    }
+    else
+    {
+        current_point.world_point = T_end * current_point.undistort_lidar_point;
+    }
+}
+
+
+/*!
+ * @brief 用于在迭代中去畸变 求解世界坐标
+ * @param current_point
+ * @param flag
+ */
+void iterCurrentPoint3D(Point3D& current_point, bool converge)
+{
+    Sophus::SE3d T_begin(last_state.rot_end, last_state.pos_end);
+    Sophus::SE3d T_end(state.rot_end, state.pos_end);
+
+    /// 如果是理想的情况 那么此处的条件是 if (!current_converge && iter_num != 0)
+    /// 也就是第一次迭代时需要去畸变 此后 每收敛一次 去一次畸变
+    if (converge)
+    {
+        double offset_time = current_dt - (current_end_time - current_point.relative_time) / 1000.0;
+        double scale = offset_time / current_dt;
+        scale = scale >= 1 ? 1 : scale <= 0 ? 0 : scale;
+        // T_wj = inter(T_wb, T_we)   T_ej = T_ew * T_wj   P_e = T_ej * P_j  P_w = T_wj * P_j
+        Sophus::SE3d T_j = Sophus::interpolate(T_begin, T_end, scale);
+        Sophus::SE3d T_ej = T_end.inverse() * T_j;
+        current_point.undistort_lidar_point = T_ej * current_point.raw_point;
+        current_point.world_point = T_j * current_point.raw_point;
+    }
+    else
+    {
+        current_point.world_point = T_end * current_point.undistort_lidar_point;
     }
 }
 
@@ -886,13 +928,8 @@ void publish_path(const ros::Publisher pubPath) {
     set_posestamp(msg_body_pose.pose);
     msg_body_pose.header.stamp = ros::Time().fromSec(lidar_end_time);
     msg_body_pose.header.frame_id = "camera_init";
-    static int jjj = 0;
-    jjj++;
-    if (jjj % 5 == 0) // if path is too large, the RVIZ will crash
-    {
-        path.poses.push_back(msg_body_pose);
-        pubPath.publish(path);
-    }
+    path.poses.push_back(msg_body_pose);
+    pubPath.publish(path);
 }
 
 void fileout_calib_result() {
@@ -1116,6 +1153,8 @@ int main(int argc, char **argv) {
         ros::spinOnce();
         if (sync_packages(Measures))
         {
+            std::chrono::steady_clock::time_point frame_begin = std::chrono::steady_clock::now();
+
             if (flg_reset)
             {
                 ROS_WARN("reset when rosbag play back.");
@@ -1124,8 +1163,12 @@ int main(int argc, char **argv) {
                 continue;
             }
 
+            std::chrono::steady_clock::time_point t_imu_process_begin = std::chrono::steady_clock::now();
+
             /// 获得当前帧的Point3D点
             feats_points = Measures.points;
+
+
 
             if (feats_undistort->empty() || (feats_undistort == NULL))
             {
@@ -1141,14 +1184,21 @@ int main(int argc, char **argv) {
 
             state_propagat = state;
 
+            std::chrono::steady_clock::time_point t_imu_process_end = std::chrono::steady_clock::now();
+
+
             /*** Segment the map in lidar FOV ***/
             lasermap_fov_segment();
+
+            std::chrono::steady_clock::time_point t_downfilter_begin = std::chrono::steady_clock::now();
 
             /// Point3D表达的下采样方式 梅森旋转随机排序 + 哈希体素下采样
             boost::mt19937_64 seed;
             std::shuffle(feats_points.begin(), feats_points.end(), seed);
             subSampleFrame(feats_points, filter_size_surf_min);
             std::shuffle(feats_points.begin(), feats_points.end(), seed);
+
+            std::chrono::steady_clock::time_point t_downfilter_end = std::chrono::steady_clock::now();
 
             feats_points_size = feats_points.size();
 
@@ -1190,11 +1240,35 @@ int main(int argc, char **argv) {
             body_var.reserve(feats_points_size);
             crossmat_list.reserve(feats_points_size);
 
+            std::chrono::steady_clock::time_point icp_begin = std::chrono::steady_clock::now();
+
+
+            double knn_time = 0;
+            double solve_time = 0;
+            int knn_count = 0;
+            int iter_count = 0;
+            StatesGroup last_converge_state = state;
+
+            bool current_converge = true;
+            int current_iter_count = 0;
+
+            distort_time = 0;
+
             for (iterCount = 0; iterCount < NUM_MAX_ITERATIONS; iterCount++)
             {
                 laserCloudOri->clear();
                 corr_normvect->clear();
                 total_residual = 0.0;
+
+                iter_count++;
+
+                if (nearest_search_en)
+                    knn_count++;
+
+                if (current_converge)
+                    distort_time++;
+
+                std::chrono::steady_clock::time_point knn_begin = std::chrono::steady_clock::now();
 
                 /** closest surface search and residual computation **/
                 #ifdef MP_EN
@@ -1204,7 +1278,7 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < feats_points_size; i++)
                 {
                     // 去畸变 计算世界坐标系下的点
-                    iterCurrentPoint3D(feats_points[i], flg_EKF_converged, iterCount);
+                    iterCurrentPoint3D(feats_points[i], current_converge);
                     // 去畸变后的点
                     PointType point_body = point3DtoPCLPoint(feats_points[i], UNDISTORT);
                     // 世界坐标系下的点
@@ -1253,6 +1327,10 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
+
+                std::chrono::steady_clock::time_point knn_end = std::chrono::steady_clock::now();
+                knn_time += std::chrono::duration_cast<std::chrono::duration<double> >(knn_end - knn_begin).count();
+
                 effect_feat_num = 0;
                 for (int i = 0; i < feats_points_size; i++)
                 {
@@ -1276,6 +1354,8 @@ int main(int argc, char **argv) {
                 Hsub.setZero();
                 Hsub_T_R_inv.setZero();
                 meas_vec.setZero();
+
+                std::chrono::steady_clock::time_point solve_begin = std::chrono::steady_clock::now();
 
                 for (int i = 0; i < effect_feat_num; i++)
                 {
@@ -1323,7 +1403,7 @@ int main(int argc, char **argv) {
 
                 EKF_stop_flg = false;
                 flg_EKF_converged = false;
-
+                current_converge = false;
                 /*** Iterative Kalman Filter Update ***/
 
                 H_T_H.block<12, 12>(0, 0) = Hsub_T_R_inv * Hsub;
@@ -1334,6 +1414,10 @@ int main(int argc, char **argv) {
 
                 //state update
                 state += solution;
+
+                std::chrono::steady_clock::time_point solve_end = std::chrono::steady_clock::now();
+
+                solve_time += std::chrono::duration_cast<std::chrono::duration<double> >(solve_end - solve_begin).count();
 
                 rot_add = solution.block<3, 1>(0, 0);
                 T_add = solution.block<3, 1>(3, 0);
@@ -1346,17 +1430,29 @@ int main(int argc, char **argv) {
 
                 euler_cur = RotMtoEuler(state.rot_end);
 
+                current_iter_count++;
                 /*** Rematch Judgement ***/
                 nearest_search_en = false;
                 if (flg_EKF_converged || ((rematch_num == 0) && (iterCount == (NUM_MAX_ITERATIONS - 2))))
                 {
                     nearest_search_en = true;
                     rematch_num++;
+
+                    /// 全局收敛判断
+                    auto delta_state = state - last_converge_state;
+
+                    if (((delta_state.block<3, 1>(0, 0).norm() * 57.3 < 1) && (delta_state.block<3, 1>(3, 0).norm() * 100 < 1.0)) || current_iter_count >= 15)
+                    {
+                        current_converge = true;
+                        current_iter_count = 0;
+                    }
+                    last_converge_state = state;
                 }
+
 
                 /*** Convergence Judgements and Covariance Update ***/
                 /// 不限制匹配次数
-                if (!EKF_stop_flg && ((iterCount == NUM_MAX_ITERATIONS - 1)))
+                if (EKF_stop_flg || ((iterCount == NUM_MAX_ITERATIONS - 1)))
                 {
                     if (flg_EKF_inited)
                     {
@@ -1388,6 +1484,9 @@ int main(int argc, char **argv) {
                 if (EKF_stop_flg) break;
             }
 
+            std::chrono::steady_clock::time_point icp_end = std::chrono::steady_clock::now();
+
+
             *feats_down_body = point3DtoPCL(feats_points, UNDISTORT);
 
             last_state = state;
@@ -1395,11 +1494,15 @@ int main(int argc, char **argv) {
             /******* Publish odometry *******/
             publish_odometry(pubOdomAftMapped);
 
+            std::chrono::steady_clock::time_point map_increment_begin = std::chrono::steady_clock::now();
+
+
             /*** add the feature points to map kdtree ***/
             map_incremental();
 
             kdtree_size_end = ikdtree.size();
 
+            std::chrono::steady_clock::time_point map_increment_end = std::chrono::steady_clock::now();
             /***** Device starts to move, data accmulation begins. ****/
             if (!imu_en && !data_accum_start && state.pos_end.norm() > 0.05) {
                 printf(BOLDCYAN "[Initialization] Movement detected, data accumulation starts.\n\n\n\n\n" RESET);
@@ -1414,6 +1517,23 @@ int main(int argc, char **argv) {
             publish_effect_world(pubLaserCloudEffect);
             if (path_en) publish_path(pubPath);
             //publish_mavros(mavros_pose_publisher);
+
+            std::chrono::steady_clock::time_point frame_end = std::chrono::steady_clock::now();
+
+            static int log_id = 0;
+            f << "ID = " << log_id <<
+              " feats points = " << feats_points_size <<
+              " imu_process = " << std::chrono::duration_cast<std::chrono::duration<double> >(t_imu_process_end - t_imu_process_begin).count() * 1000 << " ms" <<
+              " down filter = " << std::chrono::duration_cast<std::chrono::duration<double> >(t_downfilter_end - t_downfilter_begin).count() * 1000 << " ms" <<
+              " icp = "         << std::chrono::duration_cast<std::chrono::duration<double> >(icp_end - icp_begin).count() * 1000 << " ms" <<
+              " knn count = " << knn_count << " knn total cost = " << knn_time * 1000 << " ms" << " solve = " << solve_time * 1000 << " ms" <<
+              " map_increment = " << std::chrono::duration_cast<std::chrono::duration<double> >(map_increment_end - map_increment_begin).count() * 1000 << " ms" <<
+              " total iter = " << iter_count <<
+              " total distort iter = " << distort_time <<
+              " total time = " << std::chrono::duration_cast<std::chrono::duration<double> >(frame_end - frame_begin).count() * 1000 << " ms" << endl;
+            log_id++;
+
+
 
             frame_num++;
             V3D ext_euler = RotMtoEuler(state.offset_R_L_I);

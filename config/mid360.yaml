@@ -9,8 +9,8 @@ preprocess:
     blind: 1
 
 initialization:
-    cut_frame: false
-    cut_frame_num: 5            # must be positive integer
+    cut_frame: true
+    cut_frame_num: 5           # must be positive integer
     orig_odom_freq: 10           # original Lidar frequency
     mean_acc_norm: 9.805         # 1 for livox built-in IMU
     online_refine_time: 20     # seconds
@@ -21,12 +21,12 @@ initialization:
 mapping:
     filter_size_surf: 0.5
     filter_size_map: 0.5
-    gyr_cov: 0.1
-    acc_cov: 0.1
+    gyr_cov: 0.01
+    acc_cov: 0.01
     b_acc_cov: 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
-    cov_lidar: 0.0001
+    cov_lidar: 0.001
 
 publish:
     path_en:  true
