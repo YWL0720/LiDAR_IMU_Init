@@ -26,7 +26,7 @@ mapping:
     b_acc_cov: 0.0001
     b_gyr_cov: 0.0001
     det_range: 100.0
-    cov_lidar: 0.001
+    cov_lidar: 0.0001
 
 publish:
     path_en:  true

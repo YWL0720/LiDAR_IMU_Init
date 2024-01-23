@@ -56,6 +56,9 @@
 namespace plt = matplotlibcpp;
 #endif
 
+#include "ivox3d/ivox3d.h"
+
+
 #define LASER_POINT_COV     (0.001)
 #define MAXN                (720000)
 #define PUBFRAME_PERIOD     (20)
@@ -66,6 +69,7 @@ const float MOV_THRESHOLD = 1.5f;
 mutex mtx_buffer;
 condition_variable sig_buffer;
 
+bool first_frame = true;
 string root_dir = ROOT_DIR;
 string map_file_path, lid_topic, imu_topic;
 
@@ -117,6 +121,12 @@ bool point_selected_surf[100000] = {0};
 float res_last[100000] = {0.0};
 double total_residual;
 
+/// ivox
+using IVoxType = IVox<3, IVoxNodeType::DEFAULT, PointType>;
+IVoxType::Options ivox_options_;
+std::shared_ptr<IVoxType> ivox_ = nullptr;
+
+
 //surf feature in map
 PointCloudXYZI::Ptr featsFromMap(new PointCloudXYZI());
 PointCloudXYZI::Ptr feats_undistort(new PointCloudXYZI());
@@ -135,7 +145,6 @@ double current_end_time = 0.1;
 pcl::VoxelGrid<PointType> downSizeFilterSurf;
 pcl::VoxelGrid<PointType> downSizeFilterMap;
 
-KD_TREE ikdtree;
 
 M3D last_rot(M3D::Zero());
 V3F XAxisPoint_body(LIDAR_SP_LEN, 0.0, 0.0);
@@ -263,66 +272,66 @@ void RGBpointBodyToWorld(PointType const *const pi, PointTypeRGB *const po) {
 
 int points_cache_size = 0;
 
-void points_cache_collect()
-{
-    PointVector points_history;
-    ikdtree.acquire_removed_points(points_history);
-    points_cache_size = points_history.size();
-    for (int i = 0; i < points_history.size(); i++) _featsArray->push_back(points_history[i]);
-}
+//void points_cache_collect()
+//{
+//    PointVector points_history;
+//    ikdtree.acquire_removed_points(points_history);
+//    points_cache_size = points_history.size();
+//    for (int i = 0; i < points_history.size(); i++) _featsArray->push_back(points_history[i]);
+//}
 
 
 BoxPointType LocalMap_Points;
 bool Localmap_Initialized = false;
 
-void lasermap_fov_segment() {
-    cub_needrm.clear();
-
-    pointBodyToWorld(XAxisPoint_body, XAxisPoint_world);
-    V3D pos_LiD = state.pos_end;
-
-    if (!Localmap_Initialized)
-    {
-        for (int i = 0; i < 3; i++) {
-            LocalMap_Points.vertex_min[i] = pos_LiD(i) - cube_len / 2.0;
-            LocalMap_Points.vertex_max[i] = pos_LiD(i) + cube_len / 2.0;
-        }
-        Localmap_Initialized = true;
-        return;
-    }
-
-    float dist_to_map_edge[3][2];
-    bool need_move = false;
-    for (int i = 0; i < 3; i++) {
-        dist_to_map_edge[i][0] = fabs(pos_LiD(i) - LocalMap_Points.vertex_min[i]);
-        dist_to_map_edge[i][1] = fabs(pos_LiD(i) - LocalMap_Points.vertex_max[i]);
-        if (dist_to_map_edge[i][0] <= MOV_THRESHOLD * DET_RANGE ||
-            dist_to_map_edge[i][1] <= MOV_THRESHOLD * DET_RANGE)
-            need_move = true;
-    }
-    if (!need_move) return;
-    BoxPointType New_LocalMap_Points, tmp_boxpoints;
-    New_LocalMap_Points = LocalMap_Points;
-    float mov_dist = max((cube_len - 2.0 * MOV_THRESHOLD * DET_RANGE) * 0.5 * 0.9,
-                         double(DET_RANGE * (MOV_THRESHOLD - 1)));
-    for (int i = 0; i < 3; i++)
-    {
-        tmp_boxpoints = LocalMap_Points;
-        if (dist_to_map_edge[i][0] <= MOV_THRESHOLD * DET_RANGE) {
-            New_LocalMap_Points.vertex_max[i] -= mov_dist;
-            New_LocalMap_Points.vertex_min[i] -= mov_dist;
-            tmp_boxpoints.vertex_min[i] = LocalMap_Points.vertex_max[i] - mov_dist;
-            cub_needrm.push_back(tmp_boxpoints);
-        } else if (dist_to_map_edge[i][1] <= MOV_THRESHOLD * DET_RANGE) {
-            New_LocalMap_Points.vertex_max[i] += mov_dist;
-            New_LocalMap_Points.vertex_min[i] += mov_dist;
-            tmp_boxpoints.vertex_max[i] = LocalMap_Points.vertex_min[i] + mov_dist;
-            cub_needrm.push_back(tmp_boxpoints);
-        }
-    }
-    LocalMap_Points = New_LocalMap_Points;
-    points_cache_collect();
-}
+//void lasermap_fov_segment() {
+//    cub_needrm.clear();
+//
+//    pointBodyToWorld(XAxisPoint_body, XAxisPoint_world);
+//    V3D pos_LiD = state.pos_end;
+//
+//    if (!Localmap_Initialized)
+//    {
+//        for (int i = 0; i < 3; i++) {
+//            LocalMap_Points.vertex_min[i] = pos_LiD(i) - cube_len / 2.0;
+//            LocalMap_Points.vertex_max[i] = pos_LiD(i) + cube_len / 2.0;
+//        }
+//        Localmap_Initialized = true;
+//        return;
+//    }
+//
+//    float dist_to_map_edge[3][2];
+//    bool need_move = false;
+//    for (int i = 0; i < 3; i++) {
+//        dist_to_map_edge[i][0] = fabs(pos_LiD(i) - LocalMap_Points.vertex_min[i]);
+//        dist_to_map_edge[i][1] = fabs(pos_LiD(i) - LocalMap_Points.vertex_max[i]);
+//        if (dist_to_map_edge[i][0] <= MOV_THRESHOLD * DET_RANGE ||
+//            dist_to_map_edge[i][1] <= MOV_THRESHOLD * DET_RANGE)
+//            need_move = true;
+//    }
+//    if (!need_move) return;
+//    BoxPointType New_LocalMap_Points, tmp_boxpoints;
+//    New_LocalMap_Points = LocalMap_Points;
+//    float mov_dist = max((cube_len - 2.0 * MOV_THRESHOLD * DET_RANGE) * 0.5 * 0.9,
+//                         double(DET_RANGE * (MOV_THRESHOLD - 1)));
+//    for (int i = 0; i < 3; i++)
+//    {
+//        tmp_boxpoints = LocalMap_Points;
+//        if (dist_to_map_edge[i][0] <= MOV_THRESHOLD * DET_RANGE) {
+//            New_LocalMap_Points.vertex_max[i] -= mov_dist;
+//            New_LocalMap_Points.vertex_min[i] -= mov_dist;
+//            tmp_boxpoints.vertex_min[i] = LocalMap_Points.vertex_max[i] - mov_dist;
+//            cub_needrm.push_back(tmp_boxpoints);
+//        } else if (dist_to_map_edge[i][1] <= MOV_THRESHOLD * DET_RANGE) {
+//            New_LocalMap_Points.vertex_max[i] += mov_dist;
+//            New_LocalMap_Points.vertex_min[i] += mov_dist;
+//            tmp_boxpoints.vertex_max[i] = LocalMap_Points.vertex_min[i] + mov_dist;
+//            cub_needrm.push_back(tmp_boxpoints);
+//        }
+//    }
+//    LocalMap_Points = New_LocalMap_Points;
+//    points_cache_collect();
+//}
 
 double timediff_imu_wrt_lidar = 0.0;
 bool timediff_set_flg = false;
@@ -783,9 +792,11 @@ void map_incremental()
         }
     }
 
-    add_point_size = ikdtree.Add_Points(PointToAdd, true);
-    ikdtree.Add_Points(PointNoNeedDownsample, false);
-    add_point_size = PointToAdd.size() + PointNoNeedDownsample.size();
+    ivox_->AddPoints(PointToAdd);
+    ivox_->AddPoints(PointNoNeedDownsample);
+//        add_point_size = ikdtree.Add_Points(PointToAdd, true);
+//    ikdtree.Add_Points(PointNoNeedDownsample, false);
+//    add_point_size = PointToAdd.size() + PointNoNeedDownsample.size();
 }
 
 void publish_frame_world(const ros::Publisher &pubLaserCloudFullRes) {
@@ -1143,6 +1154,11 @@ int main(int argc, char **argv) {
     ros::Publisher pubPath = nh.advertise<nav_msgs::Path>
             ("/path", 100000);
 
+    /// 配置ivox
+    ivox_options_.nearby_type_ = IVoxType::NearbyType::NEARBY18;
+    ivox_options_.resolution_ = filter_size_map_min;
+    ivox_ = std::make_shared<IVoxType>(ivox_options_);
+
 //------------------------------------------------------------------------------------------------------
     signal(SIGINT, SigHandle);
     ros::Rate rate(5000);
@@ -1188,7 +1204,7 @@ int main(int argc, char **argv) {
 
 
             /*** Segment the map in lidar FOV ***/
-            lasermap_fov_segment();
+//            lasermap_fov_segment();
 
             std::chrono::steady_clock::time_point t_downfilter_begin = std::chrono::steady_clock::now();
 
@@ -1203,24 +1219,22 @@ int main(int argc, char **argv) {
             feats_points_size = feats_points.size();
 
             /*** initialize the map kdtree ***/
-            if (ikdtree.Root_Node == nullptr)
+            if (first_frame)
             {
                 if (feats_points_size > 5)
                 {
-                    ikdtree.set_downsample_param(filter_size_map_min);
                     feats_down_world->resize(feats_points_size);
                     for (int i = 0; i < feats_points_size; i++)
                     {
                         /// 第一帧不去畸变
                         feats_down_world->points[i] = point3DtoPCLPoint(feats_points[i], RAW);
                     }
-                    ikdtree.Build(feats_down_world->points);
+                    ivox_->AddPoints(feats_down_world->points);
                 }
+                first_frame = false;
                 continue;
             }
 
-            int featsFromMapNum = ikdtree.validnum();
-            kdtree_size_st = ikdtree.size();
 
             /*** ICP and iterated Kalman filter update ***/
             normvec->resize(feats_points_size);
@@ -1241,7 +1255,6 @@ int main(int argc, char **argv) {
             crossmat_list.reserve(feats_points_size);
 
             std::chrono::steady_clock::time_point icp_begin = std::chrono::steady_clock::now();
-
 
             double knn_time = 0;
             double solve_time = 0;
@@ -1293,11 +1306,19 @@ int main(int argc, char **argv) {
                     if (nearest_search_en)
                     {
                         /** Find the closest surfaces in the map **/
-                        ikdtree.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 5);
+                        ivox_->GetClosestPoint(point_world, points_near, NUM_MATCH_POINTS, 5);
                         if (points_near.size() < NUM_MATCH_POINTS)
+                        {
                             point_selected_surf[i] = false;
+                        }
                         else
-                            point_selected_surf[i] = !(pointSearchSqDis[NUM_MATCH_POINTS - 1] > 5);
+                        {
+                            /// ivox查不到返回点的距离信息
+                            double distance = sqrt((point_world.x - points_near[0].x) * (point_world.x - points_near[0].x) +
+                                                   (point_world.y - points_near[0].y) * (point_world.y - points_near[0].y) +
+                                                   (point_world.z - points_near[0].z) * (point_world.z - points_near[0].z) );
+                            point_selected_surf[i] = !(distance > 5);
+                        }
                     }
 
                     res_last[i] = -1000.0f;
@@ -1441,13 +1462,12 @@ int main(int argc, char **argv) {
                     /// 全局收敛判断 两次匹配的收敛状态相差小于阈值 重新进行去畸变
                     auto delta_state = state - last_converge_state;
 
-                    if (((delta_state.block<3, 1>(0, 0).norm() * 57.3 < 1) && (delta_state.block<3, 1>(3, 0).norm() * 100 < 1.0) && iterCount >= 4)
-                            || current_iter_count >= 15)
+                    if (((delta_state.block<3, 1>(0, 0).norm() * 57.3 < 0.5) && (delta_state.block<3, 1>(3, 0).norm() * 100 < 0.5) && iterCount >= 4))
                     {
                         current_converge = true;
                         current_iter_count = 0;
 
-                        if (distort_time >= 3)
+                        if (distort_time >= 7)
                         {
                             EKF_stop_flg = true;
                         }
@@ -1506,7 +1526,6 @@ int main(int argc, char **argv) {
             /*** add the feature points to map kdtree ***/
             map_incremental();
 
-            kdtree_size_end = ikdtree.size();
 
             std::chrono::steady_clock::time_point map_increment_end = std::chrono::steady_clock::now();
             /***** Device starts to move, data accmulation begins. ****/

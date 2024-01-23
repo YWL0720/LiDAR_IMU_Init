@@ -3,7 +3,8 @@
 #define RETURN0     0x00
 #define RETURN0AND1 0x10
 
-const bool time_list_cut_frame(PointType &x, PointType &y) {
+const bool time_list_cut_frame(PointType &x, PointType &y)
+{
     return (x.curvature < y.curvature);
 }
 
