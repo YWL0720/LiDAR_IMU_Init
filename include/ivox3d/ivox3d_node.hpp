@@ -120,8 +120,27 @@ struct IVoxNode<PointT, dim>::DistPoint {
 template <typename PointT, int dim>
 void IVoxNode<PointT, dim>::InsertPoint(const PointT& pt) {
     points_.template emplace_back(pt);
-    if (points_.size() > 5)
-        points_.resize(5);
+    if (points_.size() > 1)
+    {
+        PointT p_avg;
+        p_avg.x = 0;
+        p_avg.y = 0;
+        p_avg.z = 0;
+
+        for (auto p : points_)
+        {
+            p_avg.x += p.x;
+            p_avg.y += p.y;
+            p_avg.z += p.z;
+        }
+
+        p_avg.x = p_avg.x / points_.size();
+        p_avg.y = p_avg.y / points_.size();
+        p_avg.z = p_avg.z / points_.size();
+        points_.clear();
+        points_.push_back(p_avg);
+    }
+
 }
 
 template <typename PointT, int dim>

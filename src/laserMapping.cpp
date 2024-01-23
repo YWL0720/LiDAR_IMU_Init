@@ -697,7 +697,7 @@ void iterCurrentPoint3D(Point3D& current_point, int iter_num)
     Sophus::SE3d T_begin(last_state.rot_end, last_state.pos_end);
     Sophus::SE3d T_end(state.rot_end, state.pos_end);
 
-    if (iter_num == 0  || iter_num == 18  )
+    if (iter_num == 0)
     {
         double offset_time = current_dt - (current_end_time - current_point.relative_time) / 1000.0;
         double scale = offset_time / current_dt;
@@ -1467,7 +1467,7 @@ int main(int argc, char **argv) {
                         current_converge = true;
                         current_iter_count = 0;
 
-                        if (distort_time >= 7)
+                        if (distort_time >= 5)
                         {
                             EKF_stop_flg = true;
                         }

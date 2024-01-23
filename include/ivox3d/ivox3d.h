@@ -271,7 +271,9 @@ void IVox<dim, node_type, PointType>::AddPoints(const PointVector& points_to_add
                 grids_map_.erase(grids_cache_.back().first);
                 grids_cache_.pop_back();
             }
-        } else {
+        }
+        else
+        {
             iter->second->second.InsertPoint(pt);
             grids_cache_.splice(grids_cache_.begin(), grids_cache_, iter->second);
             grids_map_[key] = grids_cache_.begin();
