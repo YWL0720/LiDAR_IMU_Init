@@ -74,6 +74,10 @@ int iterCount = 0, feats_down_size = 0, NUM_MAX_ITERATIONS = 0, laserCloudValidN
 
 int feats_points_size = 0;
 
+int feats_points_full_size = 0;
+
+int NUM_MAX_UNDISTORT = 0;
+
 double res_mean_last = 0.05;
 double gyr_cov = 0.1, acc_cov = 0.1, grav_cov = 0.0001, b_gyr_cov = 0.0001, b_acc_cov = 0.0001;
 double last_timestamp_lidar = 0, last_timestamp_imu = 0.0;
@@ -96,10 +100,6 @@ bool runtime_pos_log = false, pcd_save_en = false, extrinsic_est_en = true, path
 bool cut_frame = true, data_accum_finished = false, data_accum_start = false, online_calib_finish = false, refine_print = false;
 int cut_frame_num = 1, orig_odom_freq = 10, frame_num = 0;
 double time_lag_IMU_wtr_lidar = 0.0, move_start_time = 0.0, online_calib_starts_time = 0.0, mean_acc_norm = 9.81;
-double online_refine_time = 20.0; //unit: s
-vector<double> Trans_LI_cov(3, 0.0005);
-vector<double> Rot_LI_cov(3, 0.00005);
-V3D mean_acc = Zero3d;
 ofstream fout_result;
 double cov_lidar = 0.001;
 
@@ -129,6 +129,8 @@ PointCloudXYZI::Ptr _featsArray;
 
 /// 全局变量 当前帧的点云Point3D表示
 std::vector<Point3D> feats_points;
+std::vector<Point3D> feats_points_full;
+
 double current_dt = 0.1;
 double current_end_time = 0.1;
 
@@ -424,57 +426,6 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
 }
 
 
-void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in, const ros::Publisher &pubIMU_sync) {
-    publish_count++;
-    mtx_buffer.lock();
-
-
-    static double IMU_period, time_msg_in, last_time_msg_in;
-    static int imu_cnt = 0;
-    time_msg_in = msg_in->header.stamp.toSec();
-
-
-    if (imu_cnt < 100) {
-        imu_cnt++;
-        mean_acc += (V3D(msg_in->linear_acceleration.x, msg_in->linear_acceleration.y, msg_in->linear_acceleration.z) -
-                     mean_acc) / (imu_cnt);
-        if (imu_cnt > 1) {
-            IMU_period += (time_msg_in - last_time_msg_in - IMU_period) / (imu_cnt - 1);
-        }
-        if (imu_cnt == 99) {
-            cout << endl << "Acceleration norm  : " << mean_acc.norm() << endl;
-            if (IMU_period > 0.01) {
-                cout << "IMU data frequency : " << 1 / IMU_period << " Hz" << endl;
-                ROS_WARN("IMU data frequency too low. Higher than 150 Hz is recommended.");
-            }
-            cout << endl;
-        }
-    }
-    last_time_msg_in = time_msg_in;
-
-
-    sensor_msgs::Imu::Ptr msg(new sensor_msgs::Imu(*msg_in));
-
-    //IMU Time Compensation
-    msg->header.stamp = ros::Time().fromSec(msg->header.stamp.toSec() - timediff_imu_wrt_lidar - time_lag_IMU_wtr_lidar);
-    double timestamp = msg->header.stamp.toSec();
-
-    if (timestamp < last_timestamp_imu) {
-        ROS_WARN("IMU loop back, clear IMU buffer.");
-        imu_buffer.clear();
-        Init_LI->IMU_buffer_clear();
-    }
-
-    last_timestamp_imu = timestamp;
-    imu_buffer.push_back(msg);
-
-    // push all IMU meas into Init_LI
-    if (!imu_en && !data_accum_finished)
-        Init_LI->push_ALL_IMU_CalibState(msg, mean_acc_norm);
-
-    mtx_buffer.unlock();
-    sig_buffer.notify_all();
-}
 
 /*!
  * @brief 同步消息 当前已经不再检索IMU
@@ -737,8 +688,11 @@ void iterCurrentPoint3D(Point3D& current_point, bool converge)
 
 int process_increments = 0;
 
+
 void map_incremental()
 {
+    /// 地图更新
+
     PointVector PointToAdd;
     PointVector PointNoNeedDownsample;
     PointToAdd.reserve(feats_points_size);
@@ -876,7 +830,8 @@ void publish_map(const ros::Publisher &pubLaserCloudMap) {
 }
 
 template<typename T>
-void set_posestamp(T &out) {
+void set_posestamp(T &out)
+{
     if (!imu_en) {
         out.position.x = state.pos_end(0);
         out.position.y = state.pos_end(1);
@@ -1011,38 +966,28 @@ void subSampleFrame(std::vector<Point3D>& frame, double size_voxel)
 }
 
 
-
-
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     ros::init(argc, argv, "laserMapping");
     ros::NodeHandle nh;
 
-    nh.param<int>("max_iteration", NUM_MAX_ITERATIONS, 4);
-    nh.param<int>("point_filter_num", p_pre->point_filter_num, 2);
+    nh.param<int>("mapping/max_iteration", NUM_MAX_ITERATIONS, 10);
+    nh.param<int>("mapping/max_undistort", NUM_MAX_UNDISTORT, 3);
+    nh.param<int>("preprocess/point_filter_num", p_pre->point_filter_num, 2);
     nh.param<string>("map_file_path", map_file_path, "");
     nh.param<string>("common/lid_topic", lid_topic, "/livox/lidar");
-    nh.param<string>("common/imu_topic", imu_topic, "/livox/imu");
     nh.param<double>("mapping/filter_size_surf", filter_size_surf_min, 0.5);
     nh.param<double>("mapping/filter_size_map", filter_size_map_min, 0.5);
-    nh.param<double>("cube_side_length", cube_len, 200);
+    nh.param<double>("mapping/cube_side_length", cube_len, 200);
     nh.param<float>("mapping/det_range", DET_RANGE, 300.f);
     nh.param<double>("mapping/gyr_cov", gyr_cov, 0.1);
     nh.param<double>("mapping/acc_cov", acc_cov, 0.1);
-    nh.param<double>("mapping/grav_cov", grav_cov, 0.001);
-    nh.param<double>("mapping/b_gyr_cov", b_gyr_cov, 0.0001);
-    nh.param<double>("mapping/b_acc_cov", b_acc_cov, 0.0001);
     nh.param<double>("preprocess/blind", p_pre->blind, 1.0);
     nh.param<int>("preprocess/lidar_type", lidar_type, AVIA);
     nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
     nh.param<bool>("preprocess/feature_extract_en", p_pre->feature_enabled, 0);
     nh.param<bool>("initialization/cut_frame", cut_frame, true);
     nh.param<int>("initialization/cut_frame_num", cut_frame_num, 1);
-    nh.param<int>("initialization/orig_odom_freq", orig_odom_freq, 10);
-    nh.param<double>("initialization/online_refine_time", online_refine_time, 20.0);
-    nh.param<double>("initialization/mean_acc_norm", mean_acc_norm, 9.81);
-    nh.param<double>("initialization/data_accum_length", Init_LI->data_accum_length, 300);
-    nh.param<vector<double>>("initialization/Rot_LI_cov", Rot_LI_cov, vector<double>());
-    nh.param<vector<double>>("initialization/Trans_LI_cov", Trans_LI_cov, vector<double>());
     nh.param<bool>("publish/path_en", path_en, true);
     nh.param<bool>("publish/scan_publish_en", scan_pub_en, 1);
     nh.param<bool>("publish/dense_publish_en", dense_pub_en, 1);
@@ -1071,12 +1016,6 @@ int main(int argc, char **argv) {
 
     _featsArray.reset(new PointCloudXYZI());
 
-
-    f.open("/home/ywl/i2lo_log.txt", std::ios::out);
-    f.precision(9);
-    f.setf(std::ios::fixed);
-
-
     memset(point_selected_surf, true, sizeof(point_selected_surf));
     memset(res_last, -1000.0f, sizeof(res_last));
     downSizeFilterSurf.setLeafSize(filter_size_surf_min, filter_size_surf_min, filter_size_surf_min);
@@ -1085,17 +1024,11 @@ int main(int argc, char **argv) {
     memset(res_last, -1000.0f, sizeof(res_last));
 
     shared_ptr<ImuProcess> p_imu(new ImuProcess());
-
     p_imu->lidar_type = p_pre->lidar_type = lidar_type;
     p_imu->imu_en = imu_en;
     p_imu->LI_init_done = false;
     p_imu->set_gyr_cov(V3D(gyr_cov, gyr_cov, gyr_cov));
     p_imu->set_acc_cov(V3D(acc_cov, acc_cov, acc_cov));
-    p_imu->set_R_LI_cov(V3D(VEC_FROM_ARRAY(Rot_LI_cov)));
-    p_imu->set_T_LI_cov(V3D(VEC_FROM_ARRAY(Trans_LI_cov)));
-    p_imu->set_gyr_bias_cov(V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov));
-    p_imu->set_acc_bias_cov(V3D(b_acc_cov, b_acc_cov, b_acc_cov));
-
 
     G.setZero();
     H_T_H.setZero();
@@ -1103,16 +1036,17 @@ int main(int argc, char **argv) {
 
     last_state = state;
 
-    // LI Init Related
-    MatrixXd Jaco_rot(30000, 3);
-    Jaco_rot.setZero();
-
     /*** debug record ***/
     boost::filesystem::create_directories(root_dir + "/Log");
     boost::filesystem::create_directories(root_dir + "/result");
     ofstream fout_out;
     fout_out.open(DEBUG_FILE_DIR("mat_out.txt"), ios::out);
     fout_result.open(RESULT_FILE_DIR("Initialization_result.txt"), ios::out);
+
+    f.open("/home/ywl/i2lo_log.txt", std::ios::out);
+    f.precision(9);
+    f.setf(std::ios::fixed);
+
     if (fout_out)
         cout << "~~~~" << ROOT_DIR << " file opened" << endl;
     else
@@ -1123,12 +1057,6 @@ int main(int argc, char **argv) {
     ros::Subscriber sub_pcl = p_pre->lidar_type == AVIA ? \
         nh.subscribe(lid_topic, 200000, livox_pcl_cbk) : \
          nh.subscribe(lid_topic, 200000, standard_pcl_cbk);
-
-    ros::Publisher pubIMU_sync = nh.advertise<sensor_msgs::Imu>
-            ("/livox/imu/async", 100000);
-    ros::Subscriber sub_imu = nh.subscribe<sensor_msgs::Imu>
-            (imu_topic, 200000, boost::bind(&imu_cbk, _1, pubIMU_sync));
-
 
     ros::Publisher pubLaserCloudFullRes = nh.advertise<sensor_msgs::PointCloud2>
             ("/cloud_registered", 100000);
@@ -1147,14 +1075,16 @@ int main(int argc, char **argv) {
     signal(SIGINT, SigHandle);
     ros::Rate rate(5000);
     bool status = ros::ok();
-
-    while (status) {
+    int frame_id = 0;
+    while (status)
+    {
         if (flg_exit) break;
         ros::spinOnce();
+
         if (sync_packages(Measures))
         {
             std::chrono::steady_clock::time_point frame_begin = std::chrono::steady_clock::now();
-
+            frame_id++;
             if (flg_reset)
             {
                 ROS_WARN("reset when rosbag play back.");
@@ -1167,25 +1097,25 @@ int main(int argc, char **argv) {
 
             /// 获得当前帧的Point3D点
             feats_points = Measures.points;
-
-
+            /// 未下采样的Point3D点
+            feats_points_full = Measures.points;
 
             if (feats_undistort->empty() || (feats_undistort == NULL))
             {
                 first_lidar_time = Measures.lidar_beg_time;
                 p_imu->first_lidar_time = first_lidar_time;
-                ROS_WARN("LI-Init not ready, no points stored.");
+                ROS_WARN("First frame, no points stored.");
             }
 
             /// 无IMU时的前向传播已经不会在此处去畸变
             p_imu->Process(Measures, state, feats_undistort);
+
             current_dt = p_imu->frame_dt;
             current_end_time = p_imu->frame_end_time;
 
             state_propagat = state;
 
             std::chrono::steady_clock::time_point t_imu_process_end = std::chrono::steady_clock::now();
-
 
             /*** Segment the map in lidar FOV ***/
             lasermap_fov_segment();
@@ -1202,20 +1132,37 @@ int main(int argc, char **argv) {
 
             feats_points_size = feats_points.size();
 
+            feats_points_full_size = feats_points_full.size();
+
+            /// 初始化第一帧点使用未下采样的点
             /*** initialize the map kdtree ***/
-            if (ikdtree.Root_Node == nullptr)
+            if (ikdtree.Root_Node == nullptr )
             {
                 if (feats_points_size > 5)
                 {
                     ikdtree.set_downsample_param(filter_size_map_min);
-                    feats_down_world->resize(feats_points_size);
-                    for (int i = 0; i < feats_points_size; i++)
+                    feats_down_world->resize(feats_points_full_size);
+                    for (int i = 0; i < feats_points_full_size; i++)
                     {
-                        /// 第一帧不去畸变
-                        feats_down_world->points[i] = point3DtoPCLPoint(feats_points[i], RAW);
+                        // 第一帧不去畸变
+                        feats_down_world->points[i] = point3DtoPCLPoint(feats_points_full[i], RAW);
                     }
                     ikdtree.Build(feats_down_world->points);
                 }
+                continue;
+            }
+
+            /// 使用分帧 将完整的一帧都加入到kdtree中
+            if (cut_frame && (frame_id < cut_frame_num))
+            {
+                PointVector pointVector;
+                pointVector.reserve(feats_points_full_size);
+                for (int i = 0; i < feats_points_full_size; i++)
+                {
+                    pointVector.push_back(point3DtoPCLPoint(feats_points_full[i], RAW));
+                }
+                /// 不需要下采样
+                ikdtree.Add_Points(pointVector, false);
                 continue;
             }
 
@@ -1227,12 +1174,10 @@ int main(int argc, char **argv) {
             feats_down_world->resize(feats_points_size);
             euler_cur = RotMtoEuler(state.rot_end);
 
-
             pointSearchInd_surf.resize(feats_points_size);
             Nearest_Points.resize(feats_points_size);
             int rematch_num = 0;
             bool nearest_search_en = true;
-
 
             /*** iterated state estimation ***/
             std::vector<M3D> body_var;
@@ -1241,7 +1186,6 @@ int main(int argc, char **argv) {
             crossmat_list.reserve(feats_points_size);
 
             std::chrono::steady_clock::time_point icp_begin = std::chrono::steady_clock::now();
-
 
             double knn_time = 0;
             double solve_time = 0;
@@ -1446,12 +1390,13 @@ int main(int argc, char **argv) {
                     {
                         current_converge = true;
                         current_iter_count = 0;
-
-                        if (distort_time >= 3)
+                        /// 如果去畸变次数达到预设值，那么也退出
+                        if (distort_time >= NUM_MAX_UNDISTORT)
                         {
                             EKF_stop_flg = true;
                         }
                     }
+
                     last_converge_state = state;
                 }
 
@@ -1468,19 +1413,10 @@ int main(int argc, char **argv) {
                         state.cov = (I_STATE - G) * state.cov;
                         total_distance += (state.pos_end - position_last).norm();
                         position_last = state.pos_end;
-                        if (!imu_en)
-                        {
-                            geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-                                    (euler_cur(0), euler_cur(1), euler_cur(2));
-                        }
-                        else
-                        {
-                            //Publish LiDAR's pose, instead of IMU's pose
-                            M3D rot_cur_lidar = state.rot_end * state.offset_R_L_I;
-                            V3D euler_cur_lidar = RotMtoEuler(rot_cur_lidar);
-                            geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-                                    (euler_cur_lidar(0), euler_cur_lidar(1), euler_cur_lidar(2));
-                        }
+                        M3D rot_cur_lidar = state.rot_end * state.offset_R_L_I;
+                        V3D euler_cur_lidar = RotMtoEuler(rot_cur_lidar);
+                        geoQuat = tf::createQuaternionMsgFromRollPitchYaw
+                                (euler_cur_lidar(0), euler_cur_lidar(1), euler_cur_lidar(2));
                         VD(DIM_STATE) K_sum = K.rowwise().sum();
                         VD(DIM_STATE) P_diag = state.cov.diagonal();
                     }
@@ -1491,7 +1427,6 @@ int main(int argc, char **argv) {
             }
 
             std::chrono::steady_clock::time_point icp_end = std::chrono::steady_clock::now();
-
 
             *feats_down_body = point3DtoPCL(feats_points, UNDISTORT);
 
@@ -1509,12 +1444,6 @@ int main(int argc, char **argv) {
             kdtree_size_end = ikdtree.size();
 
             std::chrono::steady_clock::time_point map_increment_end = std::chrono::steady_clock::now();
-            /***** Device starts to move, data accmulation begins. ****/
-            if (!imu_en && !data_accum_start && state.pos_end.norm() > 0.05) {
-                printf(BOLDCYAN "[Initialization] Movement detected, data accumulation starts.\n\n\n\n\n" RESET);
-                data_accum_start = true;
-                move_start_time = lidar_end_time;
-            }
 
             /******* Publish points *******/
             if (scan_pub_en || pcd_save_en) publish_frame_world(pubLaserCloudFullRes);
@@ -1522,7 +1451,6 @@ int main(int argc, char **argv) {
             last_rot = state.rot_end;
             publish_effect_world(pubLaserCloudEffect);
             if (path_en) publish_path(pubPath);
-            //publish_mavros(mavros_pose_publisher);
 
             std::chrono::steady_clock::time_point frame_end = std::chrono::steady_clock::now();
 
@@ -1549,82 +1477,10 @@ int main(int argc, char **argv) {
                      << " " << state.bias_g.transpose() << " " << state.bias_a.transpose() * 0.9822 / 9.81 << " "
                      << state.gravity.transpose() << " " << total_distance << endl;
 
-            //Broadcast every second
-            if (imu_en && frame_num % orig_odom_freq * cut_frame_num == 0 && !online_calib_finish) {
-                double online_calib_completeness = lidar_end_time - online_calib_starts_time;
-                online_calib_completeness =
-                        online_calib_completeness < online_refine_time ? online_calib_completeness : online_refine_time;
-                cout << "\x1B[2J\x1B[H"; //clear the screen
-                if(online_refine_time > 0.1)
-                    printProgress(online_calib_completeness / online_refine_time);
-                if (!refine_print && online_calib_completeness > (online_refine_time - 1e-6)) {
-                    refine_print = true;
-                    online_calib_finish = true;
-                    cout << endl;
-                    print_refine_result();
-                    fout_result << "Refinement result:" << endl;
-                    fileout_calib_result();
-                    string path = ros::package::getPath("lidar_imu_init");
-                    path += "/result/Initialization_result.txt";
-                    cout << endl  << "Initialization and refinement result is written to " << endl << BOLDGREEN << path << RESET <<endl;
-                }
-            }
-
-
-            if (!imu_en && !data_accum_finished && data_accum_start) {
-                //Push Lidar's Angular velocity and linear velocity
-                Init_LI->push_Lidar_CalibState(state.rot_end, state.bias_g, state.vel_end, lidar_end_time);
-                //Data Accumulation Sufficience Appraisal
-                data_accum_finished = Init_LI->data_sufficiency_assess(Jaco_rot, frame_num, state.bias_g,
-                                                                       orig_odom_freq, cut_frame_num);
-
-                if (data_accum_finished) {
-                    Init_LI->LI_Initialization(orig_odom_freq, cut_frame_num, timediff_imu_wrt_lidar, move_start_time);
-
-                    online_calib_starts_time = lidar_end_time;
-
-                    //Transfer to FAST-LIO2
-                    imu_en = true;
-                    state.offset_R_L_I = Init_LI->get_R_LI();
-                    state.offset_T_L_I = Init_LI->get_T_LI();
-                    state.pos_end = -state.rot_end * state.offset_R_L_I.transpose() * state.offset_T_L_I +
-                                    state.pos_end; //Body frame is IMU frame in FAST-LIO mode
-                    state.rot_end = state.rot_end * state.offset_R_L_I.transpose();
-                    state.gravity = Init_LI->get_Grav_L0();
-                    state.bias_g = Init_LI->get_gyro_bias();
-                    state.bias_a = Init_LI->get_acc_bias();
-
-
-                    if (lidar_type != AVIA)
-                        cut_frame_num = 2;
-
-                    time_lag_IMU_wtr_lidar = Init_LI->get_total_time_lag(); //Compensate IMU's time in the buffer
-                    for (int i = 0; i < imu_buffer.size(); i++) {
-                        imu_buffer[i]->header.stamp = ros::Time().fromSec(imu_buffer[i]->header.stamp.toSec()- time_lag_IMU_wtr_lidar);
-                    }
-
-                    p_imu->imu_en = imu_en;
-                    p_imu->LI_init_done = true;
-                    p_imu->set_mean_acc_norm(mean_acc_norm);
-                    p_imu->set_gyr_cov(V3D(0.1, 0.1, 0.1));
-                    p_imu->set_acc_cov(V3D(0.1, 0.1, 0.1));
-                    p_imu->set_gyr_bias_cov(V3D(0.0001, 0.0001, 0.0001));
-                    p_imu->set_acc_bias_cov(V3D(0.0001, 0.0001, 0.0001));
-
-                    //Output Initialization result
-                    fout_result << "Initialization result:" << endl;
-                    fileout_calib_result();
-                }
-            }
         }
         status = ros::ok();
         rate.sleep();
     }
 
-    cout << endl << REDPURPLE << "[Exit]: Exit the process." <<RESET <<endl;
-    if (!online_calib_finish) {
-        cout << YELLOW << "[WARN]: Online refinement not finished yet." << RESET;
-        print_refine_result();
-    }
     return 0;
 }

@@ -438,45 +438,7 @@ void ImuProcess::propagation_and_undist(const MeasureGroup &meas, StatesGroup &s
 
 void ImuProcess::Process(const MeasureGroup &meas, StatesGroup &stat, PointCloudXYZI::Ptr cur_pcl_un_)
 {
-  if (imu_en)
-  {
-    if(meas.imu.empty())  return;
-    ROS_ASSERT(meas.lidar != nullptr);
-
-    if (imu_need_init_)
-    {
-        if(!LI_init_done){
-            /// The very first lidar frame
-            IMU_init(meas, stat, init_iter_num);
-            imu_need_init_ = true;
-            last_imu_   = meas.imu.back();
-            if (init_iter_num > MAX_INI_COUNT)
-            {
-                cov_acc *= pow(G_m_s2 / mean_acc.norm(), 2);
-                imu_need_init_ = false;
-
-                cov_acc = cov_acc_scale;
-                cov_gyr = cov_gyr_scale;
-
-                ROS_INFO("IMU Initialization Done: Gravity: %.4f %.4f %.4f, Acc norm: %.4f", stat.gravity[0], stat.gravity[1], stat.gravity[2], mean_acc.norm());
-                IMU_mean_acc_norm = mean_acc.norm();
-            }
-        }
-        else{
-            cout << endl;
-            printf(BOLDMAGENTA "[Refinement] Switch to LIO mode, online refinement begins.\n\n" RESET);
-            last_imu_   = meas.imu.back();
-            imu_need_init_ = false;
-            cov_acc = cov_acc_scale;
-            cov_gyr = cov_gyr_scale;
-        }
-        return;
-    }
-    propagation_and_undist(meas, stat, *cur_pcl_un_);
-  }
-  else
-  {
-     Forward_propagation_without_imu(meas, stat, *cur_pcl_un_);
-  }
+    // 2.2 不再保留部分原有部分代码
+    Forward_propagation_without_imu(meas, stat, *cur_pcl_un_);
 }
 #endif

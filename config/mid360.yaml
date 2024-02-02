@@ -1,32 +1,27 @@
 common:
     lid_topic:  "/livox/lidar"
-    imu_topic:  "/mavros/imu/data_raw"
 
 preprocess:
     lidar_type: 1                # Livox series LiDAR
     feature_extract_en: false
     scan_line: 6
     blind: 1
+    point_filter_num: 3
 
 initialization:
-    cut_frame: false
-    cut_frame_num: 5           # must be positive integer
-    orig_odom_freq: 10           # original Lidar frequency
-    mean_acc_norm: 9.805         # 1 for livox built-in IMU
-    online_refine_time: 20     # seconds
-    data_accum_length: 9999999
-    Rot_LI_cov: [ 0.00005, 0.00005, 0.00005 ]
-    Trans_LI_cov: [ 0.00001, 0.00001, 0.00001 ]
+    cut_frame: true
+    cut_frame_num: 6           # must be positive integer
 
 mapping:
-    filter_size_surf: 0.5
-    filter_size_map: 0.5
-    gyr_cov: 0.01
-    acc_cov: 0.01
-    b_acc_cov: 0.0001
-    b_gyr_cov: 0.0001
+    filter_size_surf: 0.3
+    filter_size_map: 0.3
+    gyr_cov: 1.01
+    acc_cov: 1.01
     det_range: 100.0
     cov_lidar: 0.001
+    max_iteration: 20
+    max_undistort: 5
+    cube_side_length: 2000
 
 publish:
     path_en:  true
