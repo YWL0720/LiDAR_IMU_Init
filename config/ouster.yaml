@@ -9,8 +9,9 @@ preprocess:
     point_filter_num: 5
 
 initialization:
-    cut_frame: false
+    cut_frame: true
     cut_frame_num: 3 # must be positive integer
+    cut_frame_init_num: 20       # 如果分帧的话 从第几帧开始分帧 默认固态 5 机械 20
 
 mapping:
     filter_size_surf: 0.5

@@ -401,13 +401,16 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
     {
         deque<PointCloudXYZI::Ptr> ptr;
         deque<double> timestamp_lidar;
-        p_pre->process_cut_frame_pcl2(msg, ptr, timestamp_lidar, cut_frame_num, scan_count);
-        while (!ptr.empty() && !timestamp_lidar.empty())
+        deque<std::vector<Point3D>> pts_lidar;
+        p_pre->process_cut_frame_pcl2(msg, ptr, timestamp_lidar, pts_lidar, cut_frame_num, scan_count);
+        while (!ptr.empty() && !timestamp_lidar.empty() && !pts_lidar.empty())
         {
             lidar_buffer.push_back(ptr.front());
             ptr.pop_front();
             time_buffer.push_back(timestamp_lidar.front() / double(1000));//unit:s
             timestamp_lidar.pop_front();
+            lidar_points_buffer.push_back(pts_lidar.front());
+            pts_lidar.pop_front();
         }
     }
     else
@@ -973,6 +976,7 @@ int main(int argc, char **argv)
 
     nh.param<int>("mapping/max_iteration", NUM_MAX_ITERATIONS, 10);
     nh.param<int>("mapping/max_undistort", NUM_MAX_UNDISTORT, 3);
+    nh.param<int>("initialization/cut_frame_init_num", p_pre->cut_frame_init_num, 5);
     nh.param<int>("preprocess/point_filter_num", p_pre->point_filter_num, 2);
     nh.param<string>("map_file_path", map_file_path, "");
     nh.param<string>("common/lid_topic", lid_topic, "/livox/lidar");
@@ -1149,20 +1153,6 @@ int main(int argc, char **argv)
                     }
                     ikdtree.Build(feats_down_world->points);
                 }
-                continue;
-            }
-
-            /// 使用分帧 将完整的一帧都加入到kdtree中
-            if (cut_frame && (frame_id < cut_frame_num))
-            {
-                PointVector pointVector;
-                pointVector.reserve(feats_points_full_size);
-                for (int i = 0; i < feats_points_full_size; i++)
-                {
-                    pointVector.push_back(point3DtoPCLPoint(feats_points_full[i], RAW));
-                }
-                /// 不需要下采样
-                ikdtree.Add_Points(pointVector, false);
                 continue;
             }
 
@@ -1456,6 +1446,7 @@ int main(int argc, char **argv)
 
             static int log_id = 0;
             f << "ID = " << log_id <<
+              " feats points full = " << feats_points_full_size <<
               " feats points = " << feats_points_size <<
               " imu_process = " << std::chrono::duration_cast<std::chrono::duration<double> >(t_imu_process_end - t_imu_process_begin).count() * 1000 << " ms" <<
               " down filter = " << std::chrono::duration_cast<std::chrono::duration<double> >(t_downfilter_end - t_downfilter_begin).count() * 1000 << " ms" <<
@@ -1466,7 +1457,6 @@ int main(int argc, char **argv)
               " total distort iter = " << distort_time <<
               " total time = " << std::chrono::duration_cast<std::chrono::duration<double> >(frame_end - frame_begin).count() * 1000 << " ms" << endl;
             log_id++;
-
 
 
             frame_num++;
