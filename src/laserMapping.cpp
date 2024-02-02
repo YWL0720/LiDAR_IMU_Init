@@ -679,8 +679,8 @@ void iterCurrentPoint3D(Point3D& current_point, bool converge)
     Sophus::SE3d T_begin(last_state.rot_end, last_state.pos_end);
     Sophus::SE3d T_end(state.rot_end, state.pos_end);
 
-    /// 如果是理想的情况 那么此处的条件是 if (!current_converge && iter_num != 0)
-    /// 也就是第一次迭代时需要去畸变 此后 每收敛一次 去一次畸变
+    /// 滤波器每收敛一次 去一次畸变 去畸变会更新雷达坐标系下的点undistort_lidar_point
+    /// 滤波器未收敛时 只需要根据当前的undistort_lidar_point 根据最新的state 维护最新的world_point即可
     if (converge)
     {
         double offset_time = current_dt - (current_end_time - current_point.relative_time) / 1000.0;
@@ -704,7 +704,6 @@ int process_increments = 0;
 void map_incremental()
 {
     /// 地图更新
-
     PointVector PointToAdd;
     PointVector PointNoNeedDownsample;
     PointToAdd.reserve(feats_points_size);
@@ -1056,7 +1055,7 @@ int main(int argc, char **argv)
     fout_out.open(DEBUG_FILE_DIR("mat_out.txt"), ios::out);
     fout_result.open(RESULT_FILE_DIR("Initialization_result.txt"), ios::out);
 
-    f.open("/home/ywl/i2lo_log.txt", std::ios::out);
+    f.open(root_dir + "/Log/i2lo_log.txt", std::ios::out);
     f.precision(9);
     f.setf(std::ios::fixed);
 
@@ -1320,22 +1319,8 @@ int main(int argc, char **argv)
                     laserCloudOri->points[i].intensity = sqrt(R_inv(i));
 
                     /*** calculate the Measurement Jacobian matrix H ***/
-                    if (imu_en)
-                    {
-                        M3D point_this_L_cross;
-                        point_this_L_cross << SKEW_SYM_MATRX(point_this_L);
-                        V3D H_R_LI = point_this_L_cross * state.offset_R_L_I.transpose() * state.rot_end.transpose() *
-                                     norm_vec;
-                        V3D H_T_LI = state.rot_end.transpose() * norm_vec;
-                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
-                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, VEC_FROM_ARRAY(
-                                H_R_LI), VEC_FROM_ARRAY(H_T_LI);
-                    }
-                    else
-                    {
-                        V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
-                        Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
-                    }
+                    V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
+                    Hsub.row(i) << VEC_FROM_ARRAY(A), norm_p.x, norm_p.y, norm_p.z, 0, 0, 0, 0, 0, 0;
 
                     Hsub_T_R_inv.col(i) = Hsub.row(i).transpose() / cov_lidar;
                     /*** Measurement: distance to the closest surface/corner ***/
