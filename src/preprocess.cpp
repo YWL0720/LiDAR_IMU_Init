@@ -155,13 +155,18 @@ void Preprocess::process_cut_frame_livox(const livox_ros_driver::CustomMsg::Cons
 
     int valid_point_num = 0;
 
+    int real_point_filter_num = point_filter_num;
+    if (scan_count <= cut_frame_init_num)
+        real_point_filter_num = 1;
+
     for (uint i = 1; i < plsize; i++)
     {
         if ((msg->points[i].line < N_SCANS) &&
             ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00))
         {
             valid_point_num++;
-            if (valid_point_num % point_filter_num == 0) {
+            if (valid_point_num % real_point_filter_num == 0)
+            {
                 pl_full[i].x = msg->points[i].x;
                 pl_full[i].y = msg->points[i].y;
                 pl_full[i].z = msg->points[i].z;
@@ -467,11 +472,16 @@ void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr
 
 void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, deque<std::vector<Point3D>> &points_lidar, const int required_frame_num, int scan_count)
 {
+
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
 
     pt_surf.clear();
+
+    int real_point_filter_num = point_filter_num;
+    if (scan_count <= cut_frame_init_num)
+        real_point_filter_num = 1;
 
     if (lidar_type == VELO)
     {
@@ -544,7 +554,7 @@ void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr
             }
 
 
-            if (i % point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
+            if (i % real_point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
             {
                 pl_surf.points.push_back(added_pt);
 
@@ -580,7 +590,7 @@ void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr
             if ( dist < blind * blind || isnan(added_pt.x) || isnan(added_pt.y) || isnan(added_pt.z))
                 continue;
 
-            if (i % point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
+            if (i % real_point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
             {
                 pl_surf.points.push_back(added_pt);
 
@@ -616,7 +626,7 @@ void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr
             if ( dist < blind * blind || isnan(added_pt.x) || isnan(added_pt.y) || isnan(added_pt.z))
                 continue;
 
-            if (i % point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
+            if (i % real_point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
             {
                 pl_surf.points.push_back(added_pt);
 
@@ -699,7 +709,7 @@ void Preprocess::process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr
                 time_last[layer] = added_pt.curvature;
             }
 
-            if (i % point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
+            if (i % real_point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS)
             {
                 pl_surf.points.push_back(added_pt);
 
@@ -805,7 +815,11 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
     points_out = pt_surf;
 }
 
-void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
+void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg)
+{
+    static int scan_count = 0;
+    scan_count++;
+
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
@@ -827,6 +841,10 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
         pl_buff[i].reserve(plsize);
     }
     uint valid_num = 0;
+
+    int real_point_filter_num = point_filter_num;
+    if (scan_count <= cut_frame_init_num)
+        real_point_filter_num = 1;
 
     /// TODO 提取特征的部分后续再改 默认不提特征
     if (feature_enabled)
@@ -885,7 +903,7 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
                 (msg->points[i].tag & 0x30) == 0x00))
             {
                 valid_num++;
-                if (valid_num % point_filter_num == 0)
+                if (valid_num % real_point_filter_num == 0)
                 {
                     pl_full[i].x = msg->points[i].x;
                     pl_full[i].y = msg->points[i].y;
@@ -908,7 +926,6 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
                         point.relative_time = pl_full[i].curvature;
                         point.intensity = pl_full[i].intensity;
                         pt_surf.push_back(point);
-//                        log_pre << "point.relative_time = " << point.relative_time << " and " << point.relative_time / double(1000) << "s" << endl;
                     }
                 }
             }
@@ -916,7 +933,8 @@ void Preprocess::avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
     }
 }
 
-void Preprocess::l515_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+void Preprocess::l515_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
@@ -959,12 +977,19 @@ void Preprocess::l515_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
     }
 }
 
-void Preprocess::oust_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+void Preprocess::oust_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
+    static int scan_count = 0;
+    scan_count++;
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
 
     pt_surf.clear();
+
+    int real_point_filter_num = point_filter_num;
+    if (scan_count <= cut_frame_init_num)
+        real_point_filter_num = 1;
 
 
     pcl::PointCloud<ouster_ros::Point> pl_orig;
@@ -1030,7 +1055,7 @@ void Preprocess::oust_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
     {
         for (int i = 0; i < pl_orig.points.size(); i++)
         {
-            if (i % point_filter_num != 0) continue;
+            if (i % real_point_filter_num != 0) continue;
             Eigen::Vector3d pt_vec;
             PointType added_pt;
             added_pt.x = pl_orig.points[i].x;
@@ -1061,6 +1086,9 @@ void Preprocess::oust_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
 
 void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 {
+    static int scan_count = 0;
+    scan_count++;
+
     pl_surf.clear();
     pl_corn.clear();
     pl_full.clear();
@@ -1087,7 +1115,12 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
         memset(is_first, true, sizeof(is_first));
     }
 
-    if (feature_enabled) {
+    int real_point_filter_num = point_filter_num;
+    if (scan_count <= cut_frame_init_num)
+        real_point_filter_num = 1;
+
+    if (feature_enabled)
+    {
         for (int i = 0; i < N_SCANS; i++)
         {
             pl_buff[i].clear();
@@ -1208,7 +1241,7 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
                 time_last[layer] = added_pt.curvature;
             }
 
-            if (i % point_filter_num == 0)
+            if (i % real_point_filter_num == 0)
             {
                 pl_surf.points.push_back(added_pt);
                 Point3D point;
