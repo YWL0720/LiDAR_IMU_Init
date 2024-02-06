@@ -50,7 +50,7 @@
 #include "preprocess.h"
 #include <ikd-Tree/ikd_Tree.h>
 #include <LI_init/LI_init.h>
-
+#include <math.h>
 #ifndef DEPLOY
 #include "matplotlibcpp.h"
 namespace plt = matplotlibcpp;
@@ -103,6 +103,26 @@ double time_lag_IMU_wtr_lidar = 0.0, move_start_time = 0.0, online_calib_starts_
 ofstream fout_result;
 double cov_lidar = 0.001;
 
+/// 前向传播自适应噪声参数
+bool adaptive_cov = false;
+// 表达式参数
+double K_cov = 100;
+double a_cov = 5;
+double b_cov = 10;
+double boundary = 10.0;
+// 维护量和步长
+double scale_cov_t = 0.0;
+double scale_cov_R = 0.0;
+
+double step_cov = 0.5;
+
+int history_window_size = 5;
+
+deque<double> history_delta_t;
+deque<double> history_delta_R;
+
+shared_ptr<ImuProcess> p_imu(new ImuProcess());
+StatesGroup state_propagat;
 
 vector<BoxPointType> cub_needrm;
 deque<PointCloudXYZI::Ptr> lidar_buffer;
@@ -976,6 +996,27 @@ void subSampleFrame(std::vector<Point3D>& frame, double size_voxel)
     }
 }
 
+void adjustCVCov()
+{
+    // 后验状态与先验状态的差值
+    auto delta_state = state - state_propagat;
+
+    // 速度和角速度的差值
+    double delta_v = delta_state.block<3, 1>(12, 0).norm() ;
+    double delta_omega = delta_state.block<3, 1>(15, 0).norm() ;
+
+    double cov_v = K_cov / (1 + exp(-1 * a_cov * delta_v + b_cov)) + 0.01;
+    double cov_omega = K_cov / (1 + exp(-1 * a_cov * delta_omega + b_cov)) +  0.01;
+    V3D new_cov_v(cov_v, cov_v, cov_v);
+    V3D new_cov_omega(cov_omega, cov_omega, cov_omega);
+
+    p_imu->Reforward_propagation_without_imu(last_state, state, new_cov_v, new_cov_omega);
+
+    cout << " current delta_t = " << delta_v << " scale = " << delta_v << " acc_cov = " << cov_v << endl;
+    cout << " current delta_R = " << delta_omega << " scale = " << delta_omega << " gyr_cov = " << cov_omega << endl;
+    cout << endl;
+
+}
 
 int main(int argc, char **argv)
 {
@@ -984,6 +1025,10 @@ int main(int argc, char **argv)
 
     nh.param<int>("mapping/max_iteration", NUM_MAX_ITERATIONS, 10);
     nh.param<int>("mapping/max_undistort", NUM_MAX_UNDISTORT, 3);
+    nh.param<bool>("adaptive_cov/use", adaptive_cov, false);
+    nh.param<double>("adaptive_cov/K", K_cov, 1);
+    nh.param<double>("adaptive_cov/a", a_cov, 1.5);
+    nh.param<double>("adaptive_cov/b", b_cov, 5.0);
     nh.param<int>("initialization/cut_frame_init_num", p_pre->cut_frame_init_num, 5);
     nh.param<int>("preprocess/point_filter_num", p_pre->point_filter_num, 2);
     nh.param<string>("map_file_path", map_file_path, "");
@@ -1020,7 +1065,6 @@ int main(int argc, char **argv)
     MD(DIM_STATE, DIM_STATE) G, H_T_H, I_STATE;
     V3D rot_add, T_add, vel_add, gyr_add;
 
-    StatesGroup state_propagat;
     PointType pointOri, pointSel, coeff;
 
     double deltaT, deltaR;
@@ -1035,7 +1079,6 @@ int main(int argc, char **argv)
     memset(point_selected_surf, true, sizeof(point_selected_surf));
     memset(res_last, -1000.0f, sizeof(res_last));
 
-    shared_ptr<ImuProcess> p_imu(new ImuProcess());
     p_imu->lidar_type = p_pre->lidar_type = lidar_type;
     p_imu->imu_en = imu_en;
     p_imu->LI_init_done = false;
@@ -1384,6 +1427,9 @@ int main(int argc, char **argv)
                     last_converge_state = state;
                 }
 
+                /*** Adjust const velocity model cov ***/
+                if (iterCount == 1 && adaptive_cov) adjustCVCov();
+
 
                 /*** Convergence Judgements and Covariance Update ***/
                 /// 不限制匹配次数
@@ -1424,6 +1470,7 @@ int main(int argc, char **argv)
 
             /*** add the feature points to map kdtree ***/
             map_incremental();
+
 
             kdtree_size_end = ikdtree.size();
 

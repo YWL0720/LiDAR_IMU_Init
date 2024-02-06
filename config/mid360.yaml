@@ -16,13 +16,19 @@ initialization:
 mapping:
     filter_size_surf: 0.3
     filter_size_map: 0.3
-    gyr_cov: 1.01               # 角速度噪声协方差
-    acc_cov: 1.01               # 线速度噪声协方差
+    gyr_cov: 0.01             # 角速度噪声协方差
+    acc_cov: 0.01             # 线速度噪声协方差
     det_range: 100.0
     cov_lidar: 0.001            # 雷达观测噪声协方差
     max_iteration: 20           # iekf最大迭代次数
     max_undistort: 5            # 最大去畸变次数  与 最大迭代次数 二者达到一个即退出迭代
     cube_side_length: 2000
+
+adaptive_cov:
+    use: true
+    K: 100.0
+    a: 50
+    b: 10.0
 
 publish:
     path_en:  true
